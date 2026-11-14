@@ -14,7 +14,6 @@
   :root{
     --img: none;
     --accent: #1f9d55;
-    --badge: #ef3b3b;
     --page: #0d1716;
     --glass: rgba(0,0,0,.18);
     --glass-line: rgba(255,255,255,.4);
@@ -61,7 +60,6 @@
   .stage{
     position:fixed; top:0; left:0; bottom:var(--extra-b); right:var(--extra-r);
     overflow:hidden;
-    container-type:inline-size;
     transition:right .3s ease, bottom .3s ease;
   }
   .scene{position:absolute; left:0; top:0; width:100%; height:100%}
@@ -107,42 +105,14 @@
   }
   .stage.busy .hint, body.setup .hint{display:none}
 
-  /* ---------- cart (placed on the screen, not on the image) ---------- */
-  .cart{
-    position:absolute; z-index:5;
-    width:clamp(52px, 14vmin, 88px); aspect-ratio:1;
-    transform:translate(-50%,-50%);
+  /* copy of the food area that bounces each time something lands in it */
+  .food-pop{
+    position:absolute; pointer-events:none; opacity:0;
+    background-image:var(--img); background-repeat:no-repeat;
+    -webkit-mask-image:radial-gradient(closest-side, #000 72%, transparent 100%);
+    mask-image:radial-gradient(closest-side, #000 72%, transparent 100%);
+    will-change:transform;
   }
-  .cart-btn{
-    position:relative; width:100%; height:100%;
-    border:0; border-radius:50%; padding:0;
-    background:#fff; color:var(--accent);
-    display:grid; place-items:center; cursor:pointer;
-    box-shadow:0 10px 26px -8px rgba(0,0,0,.45), inset 0 -3px 0 rgba(0,0,0,.06);
-  }
-  .cart-btn svg{width:56%; height:56%; overflow:visible}
-  .cart-btn:focus-visible{outline:3px solid #fff; outline-offset:3px}
-  .cart-btn.bump{animation:bump .36s cubic-bezier(.3,.7,.4,1.6)}
-  @keyframes bump{
-    0%{transform:scale(1)}
-    35%{transform:scale(1.22) rotate(-8deg)}
-    70%{transform:scale(.94) rotate(4deg)}
-    100%{transform:scale(1)}
-  }
-  .cart-btn.glow{box-shadow:0 0 0 6px rgba(31,157,85,.35), 0 10px 30px -6px rgba(31,157,85,.8)}
-  .badge{
-    position:absolute; top:-6%; right:-6%;
-    min-width:42%; height:42%; padding:0 6%;
-    border-radius:999px; background:var(--badge); color:#fff;
-    font-weight:700; font-size:clamp(11px, 2vmin, 16px);
-    display:grid; place-items:center;
-    box-shadow:0 0 0 2px #fff;
-    transform:scale(0); transition:transform .25s cubic-bezier(.3,.7,.4,1.6);
-    font-variant-numeric:tabular-nums;
-  }
-  .badge.on{transform:scale(1)}
-  .badge.tick{animation:tick .3s ease}
-  @keyframes tick{50%{transform:scale(1.35)}}
 
   /* ---------- flying things ---------- */
   .fx{position:absolute; inset:0; pointer-events:none; z-index:6; overflow:visible}
@@ -152,13 +122,6 @@
     filter:drop-shadow(0 6px 8px rgba(0,0,0,.3));
   }
   .flyer img{display:block; width:1.1em; height:1.1em; object-fit:contain}
-  .ghost{position:absolute; left:0; top:0; will-change:transform, opacity}
-  .ghost-img{
-    width:100%; height:100%;
-    background-image:var(--img); background-repeat:no-repeat;
-    border-radius:18px;
-    box-shadow:0 18px 40px -10px rgba(0,0,0,.55), 0 0 0 3px rgba(255,255,255,.9);
-  }
   .trail{
     position:absolute; left:0; top:0; width:10px; height:10px; margin:-5px 0 0 -5px;
     border-radius:50%; background:radial-gradient(circle, #fff 0%, #ffe680 45%, rgba(255,200,60,0) 70%);
@@ -176,61 +139,13 @@
     from{transform:var(--p) scale(1); opacity:1}
     to{transform:var(--p) translate(var(--dx),var(--dy)) scale(.2); opacity:0}
   }
-  .plus{
-    position:absolute; left:0; top:0;
-    font-weight:800; font-size:clamp(14px, 3.6vmin, 22px); color:#fff;
-    text-shadow:0 2px 6px rgba(0,0,0,.45);
-    transform:var(--p);
-    animation:plus .8s ease-out forwards;
+  .ring{
+    position:absolute; left:0; top:0; width:24px; height:24px; margin:-12px 0 0 -12px;
+    border-radius:50%; border:3px solid rgba(255,255,255,.95);
+    transform:var(--p) scale(.3);
+    animation:ring .65s cubic-bezier(.2,.7,.3,1) forwards;
   }
-  @keyframes plus{
-    from{transform:var(--p) translate(-50%,0); opacity:1}
-    to{transform:var(--p) translate(-50%,-150%); opacity:0}
-  }
-
-  /* ---------- toast ---------- */
-  .toast{
-    position:absolute; left:50%; z-index:7;
-    bottom:calc(6% + env(safe-area-inset-bottom, 0px));
-    transform:translate(-50%, 16px) scale(.96); opacity:0;
-    padding:12px 20px; border-radius:999px;
-    background:rgba(17,24,32,.86); color:#fff;
-    font-weight:600; font-size:clamp(14px, 3.4vmin, 18px); white-space:nowrap;
-    display:flex; align-items:center; gap:10px;
-    box-shadow:0 14px 34px -10px rgba(0,0,0,.6);
-    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
-    transition:transform .35s cubic-bezier(.3,.7,.4,1.3), opacity .25s ease;
-    pointer-events:none;
-  }
-  .toast.show{transform:translate(-50%,0) scale(1); opacity:1}
-  .toast .dot{
-    width:22px; height:22px; border-radius:50%; background:var(--accent);
-    display:grid; place-items:center; flex:none;
-  }
-
-  /* ---------- mini cart popover ---------- */
-  .pop{
-    position:absolute; z-index:8; min-width:200px; max-width:min(280px, 80cqw);
-    padding:14px; border-radius:16px;
-    background:var(--panel); color:var(--panel-ink);
-    box-shadow:0 20px 50px -12px rgba(0,0,0,.55);
-    font-size:14px;
-    animation:popIn .2s ease-out;
-  }
-  @keyframes popIn{from{opacity:0; transform:scale(.92)}}
-  .pop h3{margin:0 0 10px; font-size:15px}
-  .pop ul{list-style:none; margin:0 0 12px; padding:0; display:grid; gap:6px}
-  .pop li{display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:10px; background:var(--panel-soft)}
-  .pop li .ic{width:28px; height:28px; display:grid; place-items:center; font-size:22px; flex:none}
-  .pop li .ic img{width:24px; height:24px; object-fit:contain}
-  .pop li .thumb{width:28px; height:28px; border-radius:7px; background-image:var(--img); background-repeat:no-repeat; flex:none}
-  .pop li .n{margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums}
-  .pop .empty{color:var(--panel-muted); margin:0 0 12px}
-  .pop .clear{
-    width:100%; padding:9px; border-radius:10px; border:1px solid var(--panel-line);
-    background:transparent; color:var(--panel-ink); cursor:pointer;
-  }
-  .pop .clear:hover{background:var(--panel-soft)}
+  @keyframes ring{to{transform:var(--p) scale(var(--s, 10)); opacity:0; border-width:1px}}
 
   /* ---------- floating controls ---------- */
   .controls{
@@ -252,27 +167,24 @@
   body.setup .controls{display:none}
 
   /* ---------- setup mode ---------- */
-  .edit-layer{position:absolute; inset:0; z-index:9; display:none; pointer-events:none}
-  .edit-layer > *{pointer-events:auto}
+  .edit-layer{position:absolute; inset:0; z-index:9; display:none}
   body.setup .edit-layer{display:block}
   body.setup .hotspot{pointer-events:none}
   body.setup .scene{outline:1px dashed rgba(255,255,255,.5)}
-  .edit-rect,.edit-point{
+  .edit-rect{
     position:absolute; cursor:move; touch-action:none;
     border:2px dashed #fff; background:rgba(255,214,10,.18);
     box-shadow:0 0 0 1px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.35);
   }
   .edit-rect.food{background:rgba(64,170,255,.18)}
   .edit-rect.focus{background:rgba(80,220,140,.10); border-style:dotted}
-  .edit-point{width:clamp(60px, 16vmin, 100px); aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%); background:rgba(255,80,120,.16)}
-  .edit-rect::before,.edit-point::before{
+  .edit-rect::before{
     content:attr(data-label);
     position:absolute; left:-2px; bottom:calc(100% + 4px);
     padding:3px 8px; border-radius:6px; white-space:nowrap;
     background:#111a; color:#fff; font-size:12px; font-weight:600;
   }
   .edit-rect.focus::before{bottom:auto; top:4px; left:4px}
-  .edit-point::before{left:50%; bottom:auto; top:calc(100% + 4px); transform:translateX(-50%)}
   .handle{
     position:absolute; right:-9px; bottom:-9px; width:18px; height:18px;
     border-radius:50%; background:#fff; border:2px solid #111;
@@ -338,34 +250,19 @@
     <div class="rumble" id="rumble">
       <div class="jolt" id="jolt">
         <img class="mock" id="mock" alt="Mockup">
+        <span class="food-pop" id="foodPop" aria-hidden="true"></span>
         <span class="hint" id="hint" aria-hidden="true"></span>
         <button class="hotspot" id="hotspot" type="button" aria-label="ORDER"></button>
       </div>
     </div>
     <div class="edit-layer">
       <div class="edit-rect focus" data-key="focusArea" data-label="ต้องเห็นเสมอ"><span class="handle"></span></div>
-      <div class="edit-rect food" data-key="foodArea" data-label="อาหาร (จุดที่ลอยออก)"><span class="handle"></span></div>
+      <div class="edit-rect food" data-key="foodArea" data-label="จุดที่ของเด้งเข้า"><span class="handle"></span></div>
       <div class="edit-rect" data-key="orderButton" data-label="ปุ่ม ORDER"><span class="handle"></span></div>
     </div>
   </div>
 
-  <div class="cart" id="cart">
-    <button class="cart-btn" id="cartBtn" type="button" aria-label="ตะกร้าสินค้า">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M2.5 3.5h2.6l2.3 11.2a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.2l1.7-7.3H6.1"/>
-        <circle cx="9.5" cy="20" r="1.4" fill="currentColor"/>
-        <circle cx="17.5" cy="20" r="1.4" fill="currentColor"/>
-      </svg>
-      <span class="badge" id="badge">0</span>
-    </button>
-  </div>
-
-  <div class="edit-layer">
-    <div class="edit-point" data-key="cart" data-label="ตะกร้า"></div>
-  </div>
-
   <div class="fx" id="fx"></div>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="error" id="error" hidden></div>
 </main>
 
@@ -388,9 +285,8 @@
   <p>ลากกรอบให้ตรงกับภาพ ใช้จุดกลมมุมขวาล่างเพื่อย่อ/ขยาย ระหว่างตั้งค่าจะแสดงภาพเต็มใบ ค่าจะถูกจำไว้ในเบราว์เซอร์นี้อัตโนมัติ</p>
   <ul class="legend">
     <li><i style="color:#e0b400"></i>ปุ่ม ORDER: พื้นที่ที่กดได้</li>
-    <li><i style="color:#3a9be0"></i>อาหาร: ส่วนของภาพที่จะลอยเข้าตะกร้า</li>
+    <li><i style="color:#3a9be0"></i>จุดที่ของเด้งเข้า: ของจะลอยเข้ามาตรงกลางกรอบนี้ และส่วนนี้ของภาพจะเด้งรับ</li>
     <li><i style="color:#3fbf7f;border-style:dotted"></i>ต้องเห็นเสมอ: ตอนขยายเต็มจอ ส่วนนี้จะไม่ถูกตัด</li>
-    <li><i style="color:#e0507a;border-radius:50%"></i>ตะกร้า: ตำแหน่งบนหน้าจอ</li>
   </ul>
   <div class="row">
     <label class="btn" for="fileInput">🖼️ เปลี่ยนรูป…</label>
@@ -414,16 +310,15 @@
      1) เอารูปใหม่ไปวางในโฟลเดอร์ img/ แล้วแก้ค่า image ด้านล่าง
         (หรือตั้งชื่อทับไฟล์ img/Order.png ไปเลย)
      2) เปิดหน้าเว็บโดยเติม ?setup ท้ายลิงก์ (เช่น index.html?setup) หรือกดปุ่ม S บนคีย์บอร์ด
-        แล้วลากกรอบ ORDER / อาหาร / ต้องเห็นเสมอ / ตะกร้า ให้ตรงกับรูปใหม่
+        แล้วลากกรอบ ORDER / จุดที่ของเด้งเข้า / ต้องเห็นเสมอ ให้ตรงกับรูปใหม่
      3) กด "คัดลอกค่า" แล้วเอามาวางแทนค่าเดิมด้านล่าง
    ===================================================================== */
 const CONFIG = {
   image: "img/Order.png",
 
   orderButton: { x: 41.5, y: 57.4, w: 16.8, h: 6.5 },  // ตำแหน่งปุ่ม ORDER บนรูป
-  foodArea:    { x: 37.6, y: 24.8, w: 24.8, h: 30.1 }, // ส่วนของรูปที่จะลอยเข้าตะกร้า
+  foodArea:    { x: 37.6, y: 24.8, w: 24.8, h: 30.1 }, // จุดที่ของเด้งเข้า (ของจะลอยเข้ามาตรงกลางกรอบนี้)
   focusArea:   { x: 31, y: 12, w: 38, h: 66 },         // ส่วนของรูปที่ต้องเห็นครบเสมอ ตอนขยายเต็มจอ
-  cart:        { x: 86, y: 9 },                        // ตำแหน่งตะกร้า เป็น % ของ "หน้าจอ"
   buttonRadius: 0.16,                                  // ความโค้งมุมปุ่ม (สัดส่วนของความสูงปุ่ม)
 
   // การวางภาพบนจอ
@@ -431,10 +326,10 @@ const CONFIG = {
   align: { x: 0.5, y: 1 },  // ถ้าภาพไม่เต็มจอด้านไหน ให้ชิด: x 0=ซ้าย 0.5=กลาง 1=ขวา / y 0=บน 0.5=กลาง 1=ล่าง
   background: "auto",       // สีพื้นที่ว่างรอบภาพ: "auto" = ใช้สีขอบภาพ หรือใส่สีเอง เช่น "#02a995"
 
-  // ไอเท็มที่ลอยตามเข้าไปในตะกร้า ใช้ emoji หรือ path รูปก็ได้ เช่น "img/pizza.png"
+  // ไอเท็มที่ลอยจากขอบจอเด้งเข้าตรงกลาง ใช้ emoji หรือ path รูปก็ได้ เช่น "img/pizza.png"
   flyItems: ["🍕", "🥤", "🍗", "🍟", "🍔", "🌭"],
-  itemsPerOrder: 6,     // จำนวนไอเท็มที่ลอยต่อการกด 1 ครั้ง
-  streamGap: 150,       // ระยะห่างระหว่างไอเท็มแต่ละชิ้น (ms)
+  itemsPerOrder: 8,     // จำนวนไอเท็มต่อการกด 1 ครั้ง
+  streamGap: 130,       // ระยะห่างระหว่างไอเท็มแต่ละชิ้น (ms)
 
   sound: true,          // เปิดเสียงเป็นค่าเริ่มต้น
   volume: 0.6,
@@ -442,17 +337,9 @@ const CONFIG = {
   soundFiles: { press: "", whoosh: "", pop: "", success: "" },
 
   vibrate: true,        // สั่นบนมือถือ
-  shake: true,          // หน้าจอโยก/ขยับขณะของเข้าตะกร้า
+  shake: true,          // หน้าจอโยก/ขยับขณะของเด้งเข้า
   hintPulse: true,      // วงแสงกะพริบชวนกดรอบปุ่ม ORDER
   showSetupButton: false, // true = แสดงปุ่ม ⚙ ให้ทุกคนเห็น (ถึงซ่อนไว้ ก็ยังเข้าได้ด้วย ?setup ท้ายลิงก์ หรือกดปุ่ม S)
-
-  text: {
-    added: "เพิ่มลงตะกร้าแล้ว!",
-    cartTitle: "ตะกร้าของฉัน",
-    empty: "ตะกร้ายังว่างอยู่",
-    clear: "ล้างตะกร้า",
-    setMenu: "ชุดเมนู",
-  },
 };
 </script>
 
@@ -473,12 +360,11 @@ const CONFIG = {
   const isSetup = () => document.body.classList.contains("setup");
 
   const stage = $("stage"), scene = $("scene"), rumble = $("rumble"), jolt = $("jolt"), mock = $("mock");
-  const hotspot = $("hotspot"), hint = $("hint"), cart = $("cart"), cartBtn = $("cartBtn");
-  const badge = $("badge"), fx = $("fx"), toast = $("toast"), errorBox = $("error");
+  const hotspot = $("hotspot"), hint = $("hint"), foodPop = $("foodPop"), fx = $("fx"), errorBox = $("error");
 
   /* ---------------- state (CONFIG + saved setup) ---------------- */
-  const LAYOUT_KEYS = ["orderButton", "foodArea", "focusArea", "cart"];
-  const SAVE_KEY = "orderInteractive.setup.v2";
+  const LAYOUT_KEYS = ["orderButton", "foodArea", "focusArea"];
+  const SAVE_KEY = "orderInteractive.setup.v3";
   const baseSig = JSON.stringify({ image: CONFIG.image, ...Object.fromEntries(LAYOUT_KEYS.map(k => [k, CONFIG[k]])) });
   const S = {};
   function resetLayout() { LAYOUT_KEYS.forEach(k => S[k] = { ...CONFIG[k] }); }
@@ -600,13 +486,6 @@ const CONFIG = {
   const editEls = {};
   document.querySelectorAll(".edit-layer [data-key]").forEach(el => editEls[el.dataset.key] = el);
 
-  function placeCart() {
-    // percentage of the screen, kept clear of notches / rounded corners
-    const half = cart.offsetWidth / 2 + 8;
-    cart.style.left = `clamp(calc(env(safe-area-inset-left, 0px) + ${half}px), ${S.cart.x}%, calc(100% - env(safe-area-inset-right, 0px) - ${half}px))`;
-    cart.style.top = `clamp(calc(env(safe-area-inset-top, 0px) + ${half}px), ${S.cart.y}%, calc(100% - env(safe-area-inset-bottom, 0px) - ${half}px))`;
-  }
-
   function layout() {
     fitScene();
     const b = S.orderButton;
@@ -615,13 +494,9 @@ const CONFIG = {
     const radius = box.height * (b.h / 100) * CONFIG.buttonRadius + "px";
     hotspot.style.borderRadius = hint.style.borderRadius = radius;
     hint.style.display = CONFIG.hintPulse ? "" : "none";
-    placeCart();
+    placeRect(foodPop, S.foodArea); cropBg(foodPop, S.foodArea);
 
-    placeRect(editEls.orderButton, S.orderButton);
-    placeRect(editEls.foodArea, S.foodArea);
-    placeRect(editEls.focusArea, S.focusArea);
-    const c = cartPoint();
-    editEls.cart.style.left = c.x + "px"; editEls.cart.style.top = c.y + "px";
+    LAYOUT_KEYS.forEach(k => placeRect(editEls[k], S[k]));
     if (isSetup()) updateReadout();
   }
   new ResizeObserver(layout).observe(stage);
@@ -693,7 +568,7 @@ const CONFIG = {
       },
       whoosh() {
         if (!on || playFile("whoosh") || !ensure()) return;
-        noise({ dur: 0.38, from: 350, to: 2600, gain: 0.22 });
+        noise({ dur: 0.38, from: 2600, to: 350, gain: 0.2 });   // falling sweep = moving inward
       },
       pop(i) {
         if (!on || playFile("pop") || !ensure()) return;
@@ -737,15 +612,12 @@ const CONFIG = {
 
   /* ---------------- geometry (all in stage px) ---------------- */
   function stageSize() { return { W: stage.clientWidth, H: stage.clientHeight }; }
-  function cartPoint() {
-    const s = stage.getBoundingClientRect(), c = cart.getBoundingClientRect();
-    return { x: c.left - s.left + c.width / 2, y: c.top - s.top + c.height / 2 };
-  }
-  function foodRectPx() {
+  // the middle of the food area: where everything bounces in
+  function targetPoint() {
     const r = S.foodArea;
     return {
-      x: box.left + r.x / 100 * box.width, y: box.top + r.y / 100 * box.height,
-      w: r.w / 100 * box.width, h: r.h / 100 * box.height,
+      x: box.left + (r.x + r.w / 2) / 100 * box.width,
+      y: box.top + (r.y + r.h / 2) / 100 * box.height,
     };
   }
 
@@ -771,17 +643,29 @@ const CONFIG = {
     const it = rumbleAnim.effect.getComputedTiming().currentIteration || 0;
     rumbleAnim.effect.updateTiming({ iterations: it + 1 });  // finish the current sway, then rest
   }
-  function joltTowardCart(strength = 1) {
+  // the whole picture "gulps" around the target each time something lands
+  function thump(strength = 1) {
     if (!CONFIG.shake || reduceMotion) return;
-    const { W, H } = stageSize(), c = cartPoint();
-    const dx = c.x - W / 2, dy = c.y - H / 2, len = Math.hypot(dx, dy) || 1;
-    const k = Math.min(W, H) * 0.012 * strength;
+    const t = targetPoint();
+    jolt.style.transformOrigin = `${t.x - box.left}px ${t.y - box.top}px`;
+    const k = 0.022 * strength;
     jolt.animate([
-      { transform: "translate(0,0) scale(1)" },
-      { transform: `translate(${dx / len * k}px, ${dy / len * k}px) scale(1.012)` },
-      { transform: `translate(${-dx / len * k * 0.4}px, ${-dy / len * k * 0.4}px) scale(.996)` },
-      { transform: "translate(0,0) scale(1)" },
-    ], { duration: 260, easing: "ease-out" });
+      { transform: "scale(1)" },
+      { transform: `scale(${1 + k})` },
+      { transform: `scale(${1 - k * 0.25})` },
+      { transform: "scale(1)" },
+    ], { duration: 280, easing: "ease-out" });
+  }
+  // the food itself bounces as it catches each item
+  function foodBounce(strength = 1) {
+    if (reduceMotion) return;
+    const a = 0.09 * strength, b = 0.05 * strength;
+    foodPop.animate([
+      { transform: "scale(1)", opacity: 1 },
+      { transform: `scale(${1 + a}, ${1 + b})`, opacity: 1, offset: 0.3 },
+      { transform: `scale(${1 + b * 0.4}, ${1 + a})`, opacity: 1, offset: 0.6 },
+      { transform: "scale(1)", opacity: 1 },
+    ], { duration: 340, easing: "ease-out" });
   }
   function retrigger(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 
@@ -794,10 +678,10 @@ const CONFIG = {
     fx.appendChild(el);
     return el;
   }
-  function sparkle(x, y) {
+  function sparkle(x, y, count = 10, reach = 1) {
     const colors = ["#ffd23f", "#ff6b6b", "#4ade80", "#60a5fa", "#ffffff", "#f472b6"];
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2 + rand(-0.2, 0.2), d = rand(28, 52);
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + rand(-0.2, 0.2), d = rand(28, 52) * reach;
       spawn("spark", x, y, el => {
         el.style.setProperty("--dx", Math.cos(a) * d + "px");
         el.style.setProperty("--dy", Math.sin(a) * d + "px");
@@ -805,48 +689,28 @@ const CONFIG = {
       });
     }
   }
-  function plusOne(x, y) {
-    spawn("plus", x, y - cart.offsetWidth * 0.75, el => el.textContent = "+1");
-  }
+  function ring(x, y, size) { spawn("ring", x, y, el => el.style.setProperty("--s", size)); }
 
-  const ease = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-  // Fly an element from p0 to p2 along a curved path, shrinking into the cart.
-  function flight(el, p0, p2, { dur = 760, lift = 0.25, spin = 0, scaleFrom = 1, scaleTo = 0.3, trail = false, onEnd }) {
-    const { W, H } = stageSize();
-    const p1 = {
-      x: p0.x + (p2.x - p0.x) * rand(0.15, 0.45) + rand(-0.08, 0.08) * W,
-      y: Math.min(p0.y, p2.y) - lift * H,
-    };
+  // ease that overshoots the end and settles back = a little bounce on arrival
+  const easeOutBack = (t) => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+
+  // Fly an element from p0 into p2 along a curve through ctrl, bounce, then get swallowed.
+  function flyIn(el, p0, ctrl, p2, { dur = 800, spin = 0, trail = false, onEnd }) {
     if (reduceMotion) { dur *= 0.6; spin = 0; trail = false; }
     const t0 = performance.now();
     let frame = 0;
     (function step() {
-      const t = clamp((performance.now() - t0) / dur, 0, 1), e = ease(t), u = 1 - e;
-      const x = u * u * p0.x + 2 * u * e * p1.x + e * e * p2.x;
-      const y = u * u * p0.y + 2 * u * e * p1.y + e * e * p2.y;
-      const s = scaleFrom + (scaleTo - scaleFrom) * e * e;
-      el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(${spin * e}deg) scale(${s})`;
-      el.style.opacity = t > 0.9 ? String((1 - t) / 0.1) : "1";
-      if (trail && ++frame % 3 === 0 && t < 0.92) spawn("trail", x, y);
+      const t = clamp((performance.now() - t0) / dur, 0, 1), e = easeOutBack(t), u = 1 - e;
+      const x = u * u * p0.x + 2 * u * e * ctrl.x + e * e * p2.x;
+      const y = u * u * p0.y + 2 * u * e * ctrl.y + e * e * p2.y;
+      const s = t < 0.72 ? 1.15 - 0.15 * (t / 0.72) : 1 - Math.pow((t - 0.72) / 0.28, 2);
+      const rot = spin * (1 - Math.pow(1 - t, 3));
+      el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(${rot}deg) scale(${Math.max(0, s)})`;
+      el.style.opacity = t > 0.88 ? String((1 - t) / 0.12) : "1";
+      if (trail && ++frame % 3 === 0 && t < 0.7) spawn("trail", x, y);
       if (t < 1) requestAnimationFrame(step);
       else { el.remove(); onEnd && onEnd(); }
     })();
-  }
-
-  /* ---------------- cart contents ---------------- */
-  const SET_KEY = "__set__";
-  let cartCount = 0;
-  const cartItems = new Map();
-  function addToCart(key) {
-    cartCount++;
-    cartItems.set(key, (cartItems.get(key) || 0) + 1);
-    badge.textContent = cartCount > 99 ? "99+" : String(cartCount);
-    badge.classList.add("on");
-    retrigger(badge, "tick");
-  }
-  function clearCart() {
-    cartCount = 0; cartItems.clear();
-    badge.textContent = "0"; badge.classList.remove("on");
   }
 
   const isImagePath = (v) => /\.(png|jpe?g|gif|webp|svg|avif)(\?.*)?$/i.test(v);
@@ -857,22 +721,19 @@ const CONFIG = {
 
   /* ---------------- the ORDER sequence ---------------- */
   let busy = 0;
-  function arrive(key, popIndex) {
-    const c = cartPoint();
-    addToCart(key);
-    retrigger(cartBtn, "bump");
-    sparkle(c.x, c.y);
-    plusOne(c.x, c.y);
-    Sound.pop(popIndex);
+  function land(i) {
+    const t = targetPoint();
+    sparkle(t.x, t.y, 8, 0.8);
+    foodBounce(1);
+    thump(1);
+    Sound.pop(i);
     Haptic.buzz(22);
-    joltTowardCart(key === SET_KEY ? 1.6 : 1);
   }
 
   function order(evt) {
     if (busy >= 4) return;          // avoid flooding the screen on frantic tapping
     busy++;
     stage.classList.add("busy");
-    closePop();
     Sound.unlock();
     Sound.press();
     Haptic.buzz(15);
@@ -890,122 +751,51 @@ const CONFIG = {
 
     startRumble();
 
-    const n = Math.max(0, CONFIG.itemsPerOrder | 0);
+    const n = Math.max(1, CONFIG.itemsPerOrder | 0);
     const pool = [...CONFIG.flyItems].sort(() => Math.random() - 0.5);
-    let remaining = n + 1, pops = 0, added = 0;
-    const done = (key) => {
-      arrive(key, pops++);
-      added++;
-      if (--remaining === 0) finish(added);
-    };
+    const startAngle = rand(0, Math.PI * 2);
+    let remaining = n, landed = 0;
 
-    // 1) the food picture itself lifts off and flies into the cart
-    setTimeout(() => {
-      const r = foodRectPx(), c = cartPoint();
-      const ghost = document.createElement("div");
-      ghost.className = "ghost";
-      ghost.style.width = r.w + "px"; ghost.style.height = r.h + "px";
-      const img = document.createElement("div");
-      img.className = "ghost-img";
-      cropBg(img, S.foodArea);
-      ghost.appendChild(img);
-      ghost.style.transform = `translate(${r.x + r.w / 2}px, ${r.y + r.h / 2}px) translate(-50%, -50%)`;
-      fx.appendChild(ghost);
-      img.animate([{ transform: "scale(1)" }, { transform: "scale(1.12)" }, { transform: "scale(1.04)" }],
-        { duration: 220, easing: "ease-out", fill: "forwards" });
-      Sound.whoosh();
-      setTimeout(() => flight(ghost, { x: r.x + r.w / 2, y: r.y + r.h / 2 }, c, {
-        dur: 820, lift: 0.2, spin: rand(-14, 14), scaleTo: (cart.offsetWidth * 0.7) / Math.max(r.w, r.h),
-        onEnd: () => done(SET_KEY),
-      }), 200);
-    }, 60);
-
-    // 2) a stream of item icons keeps flying in after it
+    // items fly in from all around the screen edges and bounce into the middle
     for (let i = 0; i < n; i++) {
       setTimeout(() => {
-        const r = foodRectPx(), c = cartPoint();
+        const { W, H } = stageSize(), T = targetPoint();
+        const a = startAngle + i * (Math.PI * 2 / n) + rand(-0.35, 0.35);
+        const p0 = { x: T.x + Math.cos(a) * W * 0.68, y: T.y + Math.sin(a) * H * 0.62 };
+        const side = Math.random() < 0.5 ? -1 : 1;           // swirl left or right on the way in
+        const dist = Math.hypot(T.x - p0.x, T.y - p0.y);
+        const ctrl = {
+          x: (p0.x + T.x) / 2 + (-Math.sin(a)) * dist * rand(0.2, 0.4) * side,
+          y: (p0.y + T.y) / 2 + Math.cos(a) * dist * rand(0.2, 0.4) * side,
+        };
         const v = pool.length ? pool[i % pool.length] : "⭐";
         const el = document.createElement("span");
         el.className = "flyer";
         el.appendChild(itemNode(v));
-        const p0 = { x: r.x + r.w * rand(0.2, 0.8), y: r.y + r.h * rand(0.25, 0.8) };
-        el.style.transform = `translate(${p0.x}px, ${p0.y}px) translate(-50%, -50%) scale(.2)`;
+        el.style.transform = `translate(${p0.x}px, ${p0.y}px) translate(-50%, -50%)`;
         fx.appendChild(el);
         if (i % 2 === 0) Sound.whoosh();
-        flight(el, p0, c, {
-          dur: rand(680, 860), lift: rand(0.16, 0.32), spin: rand(-360, 360),
-          scaleFrom: 1.1, scaleTo: 0.35, trail: true,
-          onEnd: () => done(v),
+        flyIn(el, p0, ctrl, T, {
+          dur: rand(720, 900), spin: rand(-300, 300), trail: true,
+          onEnd: () => { land(landed++); if (--remaining === 0) finish(); },
         });
-      }, 360 + i * CONFIG.streamGap);
+      }, 120 + i * CONFIG.streamGap);
     }
   }
 
-  let toastTimer = 0;
-  function finish(n) {
+  function finish() {
     busy--;
+    const t = targetPoint();
+    ring(t.x, t.y, Math.max(8, box.width * (S.foodArea.w / 100) / 18));
+    sparkle(t.x, t.y, 16, 1.8);
+    foodBounce(1.8);
+    thump(1.8);
     Sound.success();
     Haptic.buzz([40, 60, 40, 60, 120]);
-    cartBtn.classList.add("glow");
-    setTimeout(() => cartBtn.classList.remove("glow"), 700);
-    toast.innerHTML = `<span class="dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>`;
-    toast.append(`${CONFIG.text.added}  +${n}`);
-    toast.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove("show"), 1900);
     if (busy === 0) { stopRumble(); stage.classList.remove("busy"); }
   }
 
   hotspot.addEventListener("click", (e) => { if (!isSetup()) order(e); });
-
-  /* ---------------- mini cart popover ---------------- */
-  let pop = null;
-  function closePop() { if (pop) { pop.remove(); pop = null; } }
-  function openPop() {
-    closePop();
-    pop = document.createElement("div");
-    pop.className = "pop";
-    pop.addEventListener("click", e => e.stopPropagation());
-    const h = document.createElement("h3"); h.textContent = CONFIG.text.cartTitle; pop.appendChild(h);
-    if (!cartCount) {
-      const p = document.createElement("p"); p.className = "empty"; p.textContent = CONFIG.text.empty; pop.appendChild(p);
-    } else {
-      const ul = document.createElement("ul");
-      for (const [k, n] of cartItems) {
-        const li = document.createElement("li");
-        if (k === SET_KEY) {
-          const t = document.createElement("span"); t.className = "thumb"; cropBg(t, S.foodArea); li.appendChild(t);
-          li.append(CONFIG.text.setMenu);
-        } else {
-          const ic = document.createElement("span"); ic.className = "ic"; ic.appendChild(itemNode(k)); li.appendChild(ic);
-        }
-        const c = document.createElement("span"); c.className = "n"; c.textContent = "× " + n; li.appendChild(c);
-        ul.appendChild(li);
-      }
-      pop.appendChild(ul);
-      const btn = document.createElement("button");
-      btn.className = "clear"; btn.type = "button"; btn.textContent = CONFIG.text.clear;
-      btn.addEventListener("click", () => { clearCart(); closePop(); });
-      pop.appendChild(btn);
-    }
-    stage.appendChild(pop);
-    // anchor near the cart, kept inside the screen
-    const cp = cartPoint(), { W, H } = stageSize(), half = cart.offsetWidth / 2 + 10;
-    const pw = pop.offsetWidth, ph = pop.offsetHeight;
-    const right = cp.x > W / 2, below = cp.y < H * 0.6;
-    const left = right ? cp.x + half - 10 - pw : cp.x - half + 10;
-    const top = below ? cp.y + half : cp.y - half - ph;
-    pop.style.left = clamp(left, 8, Math.max(8, W - pw - 8)) + "px";
-    pop.style.top = clamp(top, 8, Math.max(8, H - ph - 8)) + "px";
-    pop.style.transformOrigin = `${right ? "right" : "left"} ${below ? "top" : "bottom"}`;
-  }
-  cartBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (isSetup()) return;
-    retrigger(cartBtn, "bump");
-    pop ? closePop() : openPop();
-  });
-  document.addEventListener("click", closePop);
 
   /* ---------------- sound + fullscreen buttons ---------------- */
   const muteBtn = $("muteBtn");
@@ -1048,12 +838,11 @@ const CONFIG = {
   function configText() {
     const r = (o) => "{ " + Object.entries(o).map(([k, v]) => `${k}: ${round1(v)}`).join(", ") + " }";
     const img = S.imageSrc === CONFIG.image ? CONFIG.image : `img/${S.imageName || "ชื่อรูปใหม่.png"}`;
-    return `image: "${img}",\norderButton: ${r(S.orderButton)},\nfoodArea:    ${r(S.foodArea)},\nfocusArea:   ${r(S.focusArea)},\ncart:        ${r(S.cart)},`;
+    return `image: "${img}",\norderButton: ${r(S.orderButton)},\nfoodArea:    ${r(S.foodArea)},\nfocusArea:   ${r(S.focusArea)},`;
   }
   function updateReadout() { readout.textContent = configText(); }
 
   function openSetup() {
-    closePop();
     document.body.classList.add("setup");
     panel.hidden = false;
     setNote("");
@@ -1113,10 +902,10 @@ const CONFIG = {
     setNote(ok ? "คัดลอกแล้ว · เปิด index.html ด้วย Notepad แล้ววางแทนค่าเดิมใน CONFIG" : "คัดลอกอัตโนมัติไม่ได้ ให้ลากเลือกข้อความด้านบนแล้วกด Ctrl+C", ok ? "ok" : "warn");
   });
 
-  // drag / resize the edit boxes: image boxes are % of the image, the cart is % of the screen
+  // drag / resize the edit boxes (values are % of the image)
   function startDrag(e, key, mode) {
     e.preventDefault(); e.stopPropagation();
-    const ref = (key === "cart" ? stage : scene).getBoundingClientRect();
+    const ref = scene.getBoundingClientRect();
     const sx = e.clientX, sy = e.clientY, o = { ...S[key] };
     const target = e.currentTarget;
     try { target.setPointerCapture(e.pointerId); } catch {}
@@ -1126,12 +915,9 @@ const CONFIG = {
       if (mode === "resize") {
         r.w = clamp(o.w + dx, 2, 100 - o.x);
         r.h = clamp(o.h + dy, 2, 100 - o.y);
-      } else if ("w" in o) {
+      } else {
         r.x = clamp(o.x + dx, 0, 100 - o.w);
         r.y = clamp(o.y + dy, 0, 100 - o.h);
-      } else {
-        r.x = clamp(o.x + dx, 0, 100);
-        r.y = clamp(o.y + dy, 0, 100);
       }
       layout();
     };
@@ -1158,7 +944,7 @@ const CONFIG = {
     const k = e.key.toLowerCase();
     if (k === "s") isSetup() ? closeSetup() : openSetup();
     else if (k === "m") { Sound.toggle(); renderMute(); }
-    else if (k === "escape") { closePop(); if (isSetup()) closeSetup(); }
+    else if (k === "escape" && isSetup()) closeSetup();
   });
 
   /* ---------------- go ---------------- */
