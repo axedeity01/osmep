@@ -66,8 +66,7 @@
     transition:right .3s ease, bottom .3s ease;
   }
   .scene{position:absolute; left:0; top:0; width:100%; height:100%}
-  .rumble,.jolt{position:absolute; inset:0}
-  .rumble{transform-origin:50% 62%}
+  .rumble,.jolt{position:absolute; inset:0}   /* only the basket lives in here, so only the basket shakes */
   .mock{
     display:block; width:100%; height:100%;
     pointer-events:none;
@@ -107,6 +106,14 @@
     70%,100%{box-shadow:0 0 0 14px rgba(255,255,255,0)}
   }
   .stage.busy .hint, body.setup .hint{display:none}
+
+  /* copy of the basket plus a soft margin; it shakes and hides the still picture underneath */
+  .basket{
+    position:absolute; pointer-events:none;
+    background-image:var(--img); background-repeat:no-repeat;
+    -webkit-mask-image:radial-gradient(closest-side, #000 92%, transparent 100%);
+    mask-image:radial-gradient(closest-side, #000 92%, transparent 100%);
+  }
 
   /* copy of the food area that bounces each time something lands in it */
   .food-pop{
@@ -250,9 +257,10 @@
 
 <main class="stage" id="stage">
   <div class="scene" id="scene">
+    <img class="mock" id="mock" alt="Mockup">
     <div class="rumble" id="rumble">
       <div class="jolt" id="jolt">
-        <img class="mock" id="mock" alt="Mockup">
+        <span class="basket" id="basket" aria-hidden="true"></span>
         <span class="food-pop" id="foodPop" aria-hidden="true"></span>
         <span class="hint" id="hint" aria-hidden="true"></span>
         <button class="hotspot" id="hotspot" type="button" aria-label="กดตะกร้า"></button>
@@ -344,7 +352,7 @@ const CONFIG = {
   soundFiles: { press: "", whoosh: "", pop: "", success: "" },
 
   vibrate: true,        // สั่นบนมือถือ
-  shake: true,          // หน้าจอโยก/ขยับขณะของเด้งเข้า
+  shake: true,          // ตะกร้าสั่นขณะของเด้งเข้า (ส่วนอื่นของภาพอยู่นิ่ง)
   hintPulse: true,      // วงแสงกะพริบชวนกดรอบปุ่ม
   autoFullscreen: true, // Android: แตะครั้งแรกแล้วเข้าโหมดเต็มจอ (iPhone ทำไม่ได้ ต้องใช้ "เพิ่มไปยังหน้าจอโฮม")
   showSetupButton: false, // true = แสดงปุ่ม ⚙ ให้ทุกคนเห็น (ถึงซ่อนไว้ ก็ยังเข้าได้ด้วย ?setup ท้ายลิงก์ หรือกดปุ่ม S)
@@ -389,7 +397,7 @@ const CONFIG = {
     ? src + (src.includes("?") ? "&" : "?") + "v=" + pageStamp : src;
 
   const stage = $("stage"), scene = $("scene"), rumble = $("rumble"), jolt = $("jolt"), mock = $("mock");
-  const hotspot = $("hotspot"), hint = $("hint"), foodPop = $("foodPop"), fx = $("fx"), errorBox = $("error");
+  const hotspot = $("hotspot"), hint = $("hint"), foodPop = $("foodPop"), basket = $("basket"), fx = $("fx"), errorBox = $("error");
 
   /* ---------------- state (CONFIG + saved setup) ---------------- */
   const LAYOUT_KEYS = ["orderButton", "foodArea", "focusArea"];
@@ -534,7 +542,13 @@ const CONFIG = {
     const radius = box.height * (b.h / 100) * CONFIG.buttonRadius + "px";
     hotspot.style.borderRadius = hint.style.borderRadius = radius;
     hint.style.display = CONFIG.hintPulse ? "" : "none";
-    placeRect(foodPop, S.foodArea); cropBg(foodPop, S.foodArea);
+    const f = S.foodArea;
+    placeRect(foodPop, f); cropBg(foodPop, f);
+    // the shaking basket copy reaches 15% past the food area, so its own glow covers the still rim underneath
+    const g = 1.15, wide = { x: f.x - f.w * (g - 1) / 2, y: f.y - f.h * (g - 1) / 2, w: f.w * g, h: f.h * g };
+    placeRect(basket, wide); cropBg(basket, wide);
+    rumble.style.transformOrigin = jolt.style.transformOrigin =
+      `${(f.x + f.w / 2) / 100 * box.width}px ${(f.y + f.h / 2) / 100 * box.height}px`;
 
     LAYOUT_KEYS.forEach(k => placeRect(editEls[k], S[k]));
     if (isSetup()) updateReadout();
@@ -706,30 +720,30 @@ const CONFIG = {
       rumbleAnim.effect.updateTiming({ iterations: Infinity });
       return;
     }
+    // only the basket rattles; keep the sideways move small so it stays inside the copy's soft margin
+    const a = box.width * (S.foodArea.w / 100) * 0.018;
     rumbleAnim = rumble.animate([
       { transform: "translate(0,0) rotate(0deg)" },
-      { transform: "translate(-0.7%, 0.3%) rotate(-0.9deg)" },
-      { transform: "translate(0.7%, -0.2%) rotate(0.8deg)" },
-      { transform: "translate(-0.45%, 0.2%) rotate(-0.55deg)" },
-      { transform: "translate(0.45%, 0) rotate(0.45deg)" },
+      { transform: `translate(${-a}px, ${a * 0.4}px) rotate(-4deg)` },
+      { transform: `translate(${a}px, ${-a * 0.3}px) rotate(3.5deg)` },
+      { transform: `translate(${-a * 0.65}px, ${a * 0.3}px) rotate(-2.5deg)` },
+      { transform: `translate(${a * 0.65}px, 0) rotate(2deg)` },
       { transform: "translate(0,0) rotate(0deg)" },
-    ], { duration: 340, iterations: Infinity, easing: "ease-in-out" });
+    ], { duration: 320, iterations: Infinity, easing: "ease-in-out" });
   }
   function stopRumble() {
     if (!rumbleAnim) return;
     const it = rumbleAnim.effect.getComputedTiming().currentIteration || 0;
     rumbleAnim.effect.updateTiming({ iterations: it + 1 });  // finish the current sway, then rest
   }
-  // the whole picture "gulps" around the target each time something lands
+  // the basket "gulps" each time something lands
   function thump(strength = 1) {
     if (!CONFIG.shake || reduceMotion) return;
-    const t = targetPoint();
-    jolt.style.transformOrigin = `${t.x - box.left}px ${t.y - box.top}px`;
-    const k = 0.022 * strength;
+    const k = 0.05 * strength;
     jolt.animate([
       { transform: "scale(1)" },
       { transform: `scale(${1 + k})` },
-      { transform: `scale(${1 - k * 0.25})` },
+      { transform: `scale(${1 - k * 0.2})` },
       { transform: "scale(1)" },
     ], { duration: 280, easing: "ease-out" });
   }
