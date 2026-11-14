@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Order">
-<title>Order Interactive</title>
+<meta name="apple-mobile-web-app-title" content="Live Commerce">
+<title>Live Commerce Thailand 2026</title>
 <style>
   :root{
     --img: none;
@@ -64,13 +64,13 @@
   }
   .scene{position:absolute; left:0; top:0; width:100%; height:100%}
   .rumble,.jolt{position:absolute; inset:0}
-  .rumble{transform-origin:50% 92%}
+  .rumble{transform-origin:50% 62%}
   .mock{
     display:block; width:100%; height:100%;
     pointer-events:none;
     -webkit-user-drag:none; -webkit-touch-callout:none;
   }
-  body:not(.solid) .mock{border-radius:18px; box-shadow:0 30px 80px -20px rgba(0,0,0,.6)}
+  body.gaps:not(.solid) .mock{border-radius:18px; box-shadow:0 30px 80px -20px rgba(0,0,0,.6)}
 
   /* ---------- ORDER hotspot (shows the same pixels as the image, so it can be "pressed") ---------- */
   .hotspot{
@@ -82,13 +82,13 @@
     transition:filter .15s ease, transform .15s ease;
   }
   .hotspot:hover{filter:brightness(1.08) saturate(1.1)}
-  .hotspot:active{transform:scale(.95)}
+  .hotspot:active{transform:scale(.97)}
   .hotspot:focus-visible{outline:3px solid #fff; outline-offset:3px}
-  .hotspot.pressed{animation:press .42s cubic-bezier(.3,.7,.4,1.4)}
+  .hotspot.pressed{animation:press .45s cubic-bezier(.3,.7,.4,1.4)}
   @keyframes press{
     0%{transform:scale(1)}
-    28%{transform:scale(.86); filter:brightness(.88)}
-    62%{transform:scale(1.07); filter:brightness(1.15)}
+    25%{transform:scale(.96); filter:brightness(.92)}
+    55%{transform:scale(1.06); filter:brightness(1.2)}
     100%{transform:scale(1)}
   }
   .ripple{
@@ -109,8 +109,8 @@
   .food-pop{
     position:absolute; pointer-events:none; opacity:0;
     background-image:var(--img); background-repeat:no-repeat;
-    -webkit-mask-image:radial-gradient(closest-side, #000 72%, transparent 100%);
-    mask-image:radial-gradient(closest-side, #000 72%, transparent 100%);
+    -webkit-mask-image:radial-gradient(closest-side, #000 84%, transparent 100%);
+    mask-image:radial-gradient(closest-side, #000 84%, transparent 100%);
     will-change:transform;
   }
 
@@ -118,13 +118,13 @@
   .fx{position:absolute; inset:0; pointer-events:none; z-index:6; overflow:visible}
   .flyer{
     position:absolute; left:0; top:0; will-change:transform, opacity;
-    line-height:1; font-size:clamp(30px, 10vmin, 64px);
-    filter:drop-shadow(0 6px 8px rgba(0,0,0,.3));
+    line-height:1; font-size:clamp(34px, 11vmin, 72px);
+    filter:drop-shadow(0 0 10px rgba(150,215,255,.9)) drop-shadow(0 8px 10px rgba(0,25,80,.35));
   }
-  .flyer img{display:block; width:1.1em; height:1.1em; object-fit:contain}
+  .flyer img{display:block; width:1.3em; height:1.3em; object-fit:contain}
   .trail{
     position:absolute; left:0; top:0; width:10px; height:10px; margin:-5px 0 0 -5px;
-    border-radius:50%; background:radial-gradient(circle, #fff 0%, #ffe680 45%, rgba(255,200,60,0) 70%);
+    border-radius:50%; background:radial-gradient(circle, #fff 0%, #bfe8ff 45%, rgba(120,200,255,0) 70%);
     transform:var(--p);
     animation:trail .5s ease-out forwards;
   }
@@ -252,13 +252,13 @@
         <img class="mock" id="mock" alt="Mockup">
         <span class="food-pop" id="foodPop" aria-hidden="true"></span>
         <span class="hint" id="hint" aria-hidden="true"></span>
-        <button class="hotspot" id="hotspot" type="button" aria-label="ORDER"></button>
+        <button class="hotspot" id="hotspot" type="button" aria-label="กดตะกร้า"></button>
       </div>
     </div>
     <div class="edit-layer">
       <div class="edit-rect focus" data-key="focusArea" data-label="ต้องเห็นเสมอ"><span class="handle"></span></div>
       <div class="edit-rect food" data-key="foodArea" data-label="จุดที่ของเด้งเข้า"><span class="handle"></span></div>
-      <div class="edit-rect" data-key="orderButton" data-label="ปุ่ม ORDER"><span class="handle"></span></div>
+      <div class="edit-rect" data-key="orderButton" data-label="ปุ่มกด"><span class="handle"></span></div>
     </div>
   </div>
 
@@ -284,7 +284,7 @@
   </header>
   <p>ลากกรอบให้ตรงกับภาพ ใช้จุดกลมมุมขวาล่างเพื่อย่อ/ขยาย ระหว่างตั้งค่าจะแสดงภาพเต็มใบ ค่าจะถูกจำไว้ในเบราว์เซอร์นี้อัตโนมัติ</p>
   <ul class="legend">
-    <li><i style="color:#e0b400"></i>ปุ่ม ORDER: พื้นที่ที่กดได้</li>
+    <li><i style="color:#e0b400"></i>ปุ่มกด: พื้นที่ที่กดได้</li>
     <li><i style="color:#3a9be0"></i>จุดที่ของเด้งเข้า: ของจะลอยเข้ามาตรงกลางกรอบนี้ และส่วนนี้ของภาพจะเด้งรับ</li>
     <li><i style="color:#3fbf7f;border-style:dotted"></i>ต้องเห็นเสมอ: ตอนขยายเต็มจอ ส่วนนี้จะไม่ถูกตัด</li>
   </ul>
@@ -306,28 +306,32 @@
 /* =====================================================================
    ตั้งค่า: แก้ตรงนี้ได้เลย (ตำแหน่งบนรูปเป็น % ของความกว้าง/สูงของรูป)
 
-   เปลี่ยนรูป mockup:
+   เปลี่ยนรูปพื้นหลัง:
      1) เอารูปใหม่ไปวางในโฟลเดอร์ img/ แล้วแก้ค่า image ด้านล่าง
-        (หรือตั้งชื่อทับไฟล์ img/Order.png ไปเลย)
+        (รูปควรกว้างไม่เกิน ~1500px เพื่อให้มือถือโหลดเร็ว)
      2) เปิดหน้าเว็บโดยเติม ?setup ท้ายลิงก์ (เช่น index.html?setup) หรือกดปุ่ม S บนคีย์บอร์ด
-        แล้วลากกรอบ ORDER / จุดที่ของเด้งเข้า / ต้องเห็นเสมอ ให้ตรงกับรูปใหม่
+        แล้วลากกรอบ ปุ่มกด / จุดที่ของเด้งเข้า / ต้องเห็นเสมอ ให้ตรงกับรูปใหม่
      3) กด "คัดลอกค่า" แล้วเอามาวางแทนค่าเดิมด้านล่าง
    ===================================================================== */
 const CONFIG = {
-  image: "img/Order.png",
+  image: "img/Basket.jpg",   // ย่อมาจาก img/Basket.png (ตัวเต็ม 18MB ใหญ่เกินสำหรับมือถือ)
 
-  orderButton: { x: 41.5, y: 57.4, w: 16.8, h: 6.5 },  // ตำแหน่งปุ่ม ORDER บนรูป
-  foodArea:    { x: 37.6, y: 24.8, w: 24.8, h: 30.1 }, // จุดที่ของเด้งเข้า (ของจะลอยเข้ามาตรงกลางกรอบนี้)
-  focusArea:   { x: 31, y: 12, w: 38, h: 66 },         // ส่วนของรูปที่ต้องเห็นครบเสมอ ตอนขยายเต็มจอ
-  buttonRadius: 0.16,                                  // ความโค้งมุมปุ่ม (สัดส่วนของความสูงปุ่ม)
+  orderButton: { x: 23.1, y: 46.8, w: 53.9, h: 30.3 }, // ปุ่มที่กด (วงกลมตะกร้า)
+  foodArea:    { x: 23.1, y: 46.8, w: 53.9, h: 30.3 }, // จุดที่ของเด้งเข้า (ของจะลอยเข้ามาตรงกลางกรอบนี้ และส่วนนี้จะเด้งรับ)
+  focusArea:   { x: 15, y: 6, w: 70, h: 73 },          // ส่วนของรูปที่ต้องเห็นครบเสมอ ตอนขยายเต็มจอ (โลโก้ หัวข้อ ตะกร้า)
+  buttonRadius: 0.5,                                   // ความโค้งมุมปุ่ม: 0.5 = วงกลม
 
   // การวางภาพบนจอ
   fit: "fill",              // "fill" = ขยายให้เต็มจอ (ตัดขอบที่เกินได้ แต่ focusArea ต้องเห็นครบ) | "contain" = เห็นทั้งภาพเสมอ
-  align: { x: 0.5, y: 1 },  // ถ้าภาพไม่เต็มจอด้านไหน ให้ชิด: x 0=ซ้าย 0.5=กลาง 1=ขวา / y 0=บน 0.5=กลาง 1=ล่าง
-  background: "auto",       // สีพื้นที่ว่างรอบภาพ: "auto" = ใช้สีขอบภาพ หรือใส่สีเอง เช่น "#02a995"
+  align: { x: 0.5, y: 0.5 },// ถ้าภาพไม่เต็มจอด้านไหน ให้ชิด: x 0=ซ้าย 0.5=กลาง 1=ขวา / y 0=บน 0.5=กลาง 1=ล่าง
+  background: "blur",       // พื้นที่ว่างรอบภาพ: "blur" = ภาพเบลอ | "auto" = สีขอบภาพ | หรือใส่สีเอง เช่น "#0457c6"
 
-  // ไอเท็มที่ลอยจากขอบจอเด้งเข้าตรงกลาง ใช้ emoji หรือ path รูปก็ได้ เช่น "img/pizza.png"
-  flyItems: ["🍕", "🥤", "🍗", "🍟", "🍔", "🌭"],
+  // ไอเท็มที่ลอยจากขอบจอเด้งเข้าตรงกลาง ใช้ path รูป (svg/png) หรือ emoji ก็ได้
+  flyItems: [
+    "img/icons/lipstick.svg", "img/icons/perfume.svg", "img/icons/compact.svg", "img/icons/polish.svg",
+    "img/icons/tshirt.svg", "img/icons/dress.svg", "img/icons/heel.svg", "img/icons/handbag.svg",
+    "img/icons/bag.svg", "img/icons/glasses.svg",
+  ],
   itemsPerOrder: 8,     // จำนวนไอเท็มต่อการกด 1 ครั้ง
   streamGap: 130,       // ระยะห่างระหว่างไอเท็มแต่ละชิ้น (ms)
 
@@ -338,7 +342,7 @@ const CONFIG = {
 
   vibrate: true,        // สั่นบนมือถือ
   shake: true,          // หน้าจอโยก/ขยับขณะของเด้งเข้า
-  hintPulse: true,      // วงแสงกะพริบชวนกดรอบปุ่ม ORDER
+  hintPulse: true,      // วงแสงกะพริบชวนกดรอบปุ่ม
   showSetupButton: false, // true = แสดงปุ่ม ⚙ ให้ทุกคนเห็น (ถึงซ่อนไว้ ก็ยังเข้าได้ด้วย ?setup ท้ายลิงก์ หรือกดปุ่ม S)
 };
 </script>
@@ -411,14 +415,16 @@ const CONFIG = {
   /* ---------------- image + surround colour ---------------- */
   function cssUrl(src) { return `url("${String(src).replace(/["\\]/g, "\\$&")}")`; }
 
-  // Most common colour along the image's edges, so the empty space around it blends in.
-  function edgeColor(img) {
+  // edge: most common colour along the image's edges (null when the edges are too busy to extend)
+  // avg:  overall colour, used to tint the page and the phone's browser bar
+  function imageColors(img) {
     try {
       const n = 40, c = document.createElement("canvas");
       c.width = c.height = n;
       const g = c.getContext("2d", { willReadFrequently: true });
       g.drawImage(img, 0, 0, n, n);
       const d = g.getImageData(0, 0, n, n).data;
+      const rgb = (o, k) => `rgb(${Math.round(o.r / k)}, ${Math.round(o.g / k)}, ${Math.round(o.b / k)})`;
       const bins = new Map();
       let best = null;
       const add = (x, y) => {
@@ -431,19 +437,25 @@ const CONFIG = {
         if (!best || b.n > best.n) best = b;
       };
       for (let i = 0; i < n; i++) { add(i, 0); add(i, n - 1); add(0, i); add(n - 1, i); }
-      if (!best || best.n < n * 4 * 0.35) return null;   // edges are too busy to extend
-      return `rgb(${Math.round(best.r / best.n)}, ${Math.round(best.g / best.n)}, ${Math.round(best.b / best.n)})`;
-    } catch { return null; }   // canvas is blocked for local files in some browsers
+      const sum = { r: 0, g: 0, b: 0 };
+      for (let i = 0; i < d.length; i += 4) { sum.r += d[i]; sum.g += d[i + 1]; sum.b += d[i + 2]; }
+      return {
+        edge: best && best.n >= n * 4 * 0.35 ? rgb(best, best.n) : null,
+        avg: rgb(sum, n * n),
+      };
+    } catch { return { edge: null, avg: null }; }   // canvas is blocked for local files in some browsers
   }
   function applySurround(img) {
-    const color = CONFIG.background && CONFIG.background !== "auto" ? CONFIG.background : edgeColor(img);
-    document.body.classList.toggle("solid", !!color);
-    const page = color || "#0d1716";
+    const mode = CONFIG.background || "auto";
+    const c = imageColors(img);
+    const solid = mode === "auto" ? c.edge : mode === "blur" ? null : mode;
+    document.body.classList.toggle("solid", !!solid);
+    const page = solid || c.avg || "#0b1626";
     document.documentElement.style.setProperty("--page", page);
     $("themeColor").setAttribute("content", page);
   }
 
-  function setImage(src, onDone) {
+  function setImage(src, onDone, retried) {
     const url = versioned(src);
     const probe = new Image();
     probe.onload = () => {
@@ -456,6 +468,7 @@ const CONFIG = {
       onDone && onDone(true);
     };
     probe.onerror = () => {
+      if (!retried && !src.startsWith("data:")) { setTimeout(() => setImage(src, onDone, true), 800); return; }   // patchy mobile data: try once more
       errorBox.innerHTML = "";
       const box = document.createElement("div");
       box.innerHTML = `ไม่พบรูปภาพ<br><code></code><br><small>วางไฟล์ไว้ในโฟลเดอร์ img/ ข้างไฟล์ index.html<br>หรือแก้ค่า <b>image</b> ใน CONFIG</small>`;
@@ -489,6 +502,7 @@ const CONFIG = {
     box.width = W; box.height = H;
     box.left = W >= vw ? clamp(vw / 2 - fcx, vw - W, 0) : (vw - W) * ax;
     box.top = H >= vh ? clamp(vh / 2 - fcy, vh - H, 0) : (vh - H) * ay;
+    document.body.classList.toggle("gaps", W < vw - 1 || H < vh - 1);   // empty space shows around the image
     Object.assign(scene.style, {
       left: box.left + "px", top: box.top + "px", width: W + "px", height: H + "px",
     });
@@ -699,7 +713,7 @@ const CONFIG = {
     return el;
   }
   function sparkle(x, y, count = 10, reach = 1) {
-    const colors = ["#ffd23f", "#ff6b6b", "#4ade80", "#60a5fa", "#ffffff", "#f472b6"];
+    const colors = ["#ffffff", "#cfeeff", "#8fd3ff", "#4fb3ff", "#a8f0ff", "#e6f6ff"];
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2 + rand(-0.2, 0.2), d = rand(28, 52) * reach;
       spawn("spark", x, y, el => {
@@ -735,9 +749,11 @@ const CONFIG = {
 
   const isImagePath = (v) => /\.(png|jpe?g|gif|webp|svg|avif)(\?.*)?$/i.test(v);
   function itemNode(v) {
-    if (isImagePath(v)) { const img = document.createElement("img"); img.src = v; img.alt = ""; return img; }
+    if (isImagePath(v)) { const img = document.createElement("img"); img.src = versioned(v); img.alt = ""; return img; }
     return document.createTextNode(v);
   }
+  // load the item pictures ahead of the first tap (called once the background is in)
+  const preloadItems = () => CONFIG.flyItems.forEach(v => { if (isImagePath(v)) new Image().src = versioned(v); });
 
   /* ---------------- the ORDER sequence ---------------- */
   let busy = 0;
@@ -972,6 +988,7 @@ const CONFIG = {
     if (!ok && S.imageSrc !== CONFIG.image) {   // a remembered custom image went missing: fall back
       S.imageSrc = CONFIG.image; S.imageName = null; setImage(S.imageSrc);
     }
+    preloadItems();
   });
   if (/[?&]setup\b/.test(location.search)) openSetup();
 })();
