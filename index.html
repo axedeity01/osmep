@@ -339,7 +339,7 @@ const CONFIG = {
   streamGap: 130,       // ระยะห่างระหว่างไอเท็มแต่ละชิ้น (ms)
 
   sound: true,          // เปิดเสียงเป็นค่าเริ่มต้น
-  volume: 0.6,
+  volume: 0.9,          // ความดัง 0-1
   // ใช้ไฟล์เสียงของตัวเองได้ เช่น "sound/pop.mp3" (เว้นว่าง = ใช้เสียงที่สร้างในโปรแกรม)
   soundFiles: { press: "", whoosh: "", pop: "", success: "" },
 
@@ -366,6 +366,8 @@ const CONFIG = {
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
   };
   const isSetup = () => document.body.classList.contains("setup");
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
   /* ---------------- always show the latest published version ---------------- */
   // GitHub Pages lets browsers reuse a page for 10 minutes. If a newer one is online, reload once.
@@ -547,6 +549,33 @@ const CONFIG = {
     const files = {};
     Object.entries(CONFIG.soundFiles || {}).forEach(([k, src]) => { if (src) files[k] = new Audio(src); });
 
+    // iPhone mutes website sound while the phone is on silent, but not video sound.
+    // A "playback" audio session (iOS 16.4+) makes these sounds play like a video does;
+    // older iOS gets the same effect from a silent <audio> loop. Must run inside a tap.
+    let unmuteEl = null;
+    function silentWav() {
+      const n = 4410, buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+      const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+      w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVE"); w(12, "fmt ");
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, 44100, true); v.setUint32(28, 44100, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+      w(36, "data"); v.setUint32(40, n, true);
+      new Uint8Array(buf, 44).fill(128);
+      return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+    }
+    function unmuteIOS() {
+      try { if (navigator.audioSession) { navigator.audioSession.type = "playback"; return; } } catch {}
+      if (!isIOS) return;
+      if (!unmuteEl) {
+        unmuteEl = document.createElement("audio");
+        unmuteEl.src = silentWav();
+        unmuteEl.loop = true;
+        unmuteEl.setAttribute("playsinline", "");
+        unmuteEl.setAttribute("x-webkit-airplay", "deny");
+      }
+      unmuteEl.play().catch(() => {});
+    }
+
     function ensure() {
       if (!ctx) {
         const AC = window.AudioContext || window.webkitAudioContext;
@@ -554,12 +583,19 @@ const CONFIG = {
         ctx = new AC();
         master = ctx.createGain();
         master.gain.value = CONFIG.volume;
-        master.connect(ctx.destination);
+        // keeps overlapping sounds loud on small phone speakers without crackling
+        const comp = ctx.createDynamicsCompressor();
+        comp.threshold.value = -16; comp.knee.value = 10; comp.ratio.value = 4;
+        comp.attack.value = 0.003; comp.release.value = 0.15;
+        master.connect(comp).connect(ctx.destination);
         noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate);
         const d = noiseBuf.getChannelData(0);
         for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
       }
-      if (ctx.state === "suspended") ctx.resume();
+      if (ctx.state !== "running") {   // "suspended", or "interrupted" after a call / app switch on iPhone
+        const p = ctx.resume();
+        if (p && p.catch) p.catch(() => {});
+      }
       return ctx;
     }
     function tone({ f, f2 = f, type = "sine", dur = 0.15, gain = 0.4, at = 0, attack = 0.005 }) {
@@ -597,8 +633,13 @@ const CONFIG = {
 
     return {
       get on() { return on; },
-      toggle() { on = !on; store.set("orderInteractive.sound", on); if (on) ensure(); return on; },
-      unlock() { if (on) ensure(); },
+      toggle() {
+        on = !on;
+        store.set("orderInteractive.sound", on);
+        if (on) { unmuteIOS(); ensure(); } else if (unmuteEl) unmuteEl.pause();
+        return on;
+      },
+      unlock() { if (on) { unmuteIOS(); ensure(); } },
       press() {
         if (!on || playFile("press") || !ensure()) return;
         tone({ f: 1700, f2: 500, type: "square", dur: 0.05, gain: 0.12 });
@@ -626,8 +667,6 @@ const CONFIG = {
   /* ---------------- haptics ---------------- */
   const Haptic = (() => {
     const canVibrate = typeof navigator.vibrate === "function";
-    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     let iosLabel = null;
     // iOS Safari has no vibrate(); toggling a native <input switch> gives a light haptic tick (iOS 18+).
     if (!canVibrate && isIOS) {
