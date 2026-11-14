@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0d1716" id="themeColor">
-<!-- "Add to Home Screen" on iPhone opens it full screen, without the browser bars -->
+<meta name="theme-color" content="#0055b7" id="themeColor">
+<!-- iPhone can't hide the browser bars from a web page; "Add to Home Screen" opens it full screen instead -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="img/app-icon-180.png">
+<link rel="icon" type="image/png" href="img/app-icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,7 +17,7 @@
   :root{
     --img: none;
     --accent: #1f9d55;
-    --page: #0d1716;
+    --page: #0055b7;
     --glass: rgba(0,0,0,.18);
     --glass-line: rgba(255,255,255,.4);
     --panel: #ffffff;
@@ -343,6 +346,7 @@ const CONFIG = {
   vibrate: true,        // สั่นบนมือถือ
   shake: true,          // หน้าจอโยก/ขยับขณะของเด้งเข้า
   hintPulse: true,      // วงแสงกะพริบชวนกดรอบปุ่ม
+  autoFullscreen: true, // Android: แตะครั้งแรกแล้วเข้าโหมดเต็มจอ (iPhone ทำไม่ได้ ต้องใช้ "เพิ่มไปยังหน้าจอโฮม")
   showSetupButton: false, // true = แสดงปุ่ม ⚙ ให้ทุกคนเห็น (ถึงซ่อนไว้ ก็ยังเข้าได้ด้วย ?setup ท้ายลิงก์ หรือกดปุ่ม S)
 };
 </script>
@@ -831,7 +835,13 @@ const CONFIG = {
     if (busy === 0) { stopRumble(); stage.classList.remove("busy"); }
   }
 
-  hotspot.addEventListener("click", (e) => { if (!isSetup()) order(e); });
+  hotspot.addEventListener("click", (e) => {
+    if (isSetup()) return;
+    Sound.unlock();
+    // if this tap just switched to full screen, let the screen settle before things fly
+    if (performance.now() - fsRequestedAt < 200) setTimeout(() => order(), 380);
+    else order(e);
+  });
 
   /* ---------------- sound + fullscreen buttons ---------------- */
   const muteBtn = $("muteBtn");
@@ -849,21 +859,33 @@ const CONFIG = {
   const ICON_FS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`;
   const ICON_FS_EXIT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>`;
   function renderFs() { fsBtn.innerHTML = fsEl() ? ICON_FS_EXIT : ICON_FS; }
-  if (!standalone && (document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
+  function enterFullscreen() {
+    try {
+      const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root, { navigationUI: "hide" });
+      if (p && p.catch) p.catch(() => {});
+    } catch {}
+  }
+  const fsSupported = !standalone && !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+  if (fsSupported) {
     fsBtn.hidden = false;
     renderFs();
     fsBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      try {
-        if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-        else {
-          const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root, { navigationUI: "hide" });
-          if (p && p.catch) p.catch(() => {});
-        }
-      } catch {}
+      if (fsEl()) { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch {} }
+      else enterFullscreen();
     });
     document.addEventListener("fullscreenchange", renderFs);
     document.addEventListener("webkitfullscreenchange", renderFs);
+  }
+  // Phones (Android): the first tap anywhere switches to full screen. Browsers only allow it from a tap, never on load.
+  let fsRequestedAt = -1e9, autoFsDone = false;
+  if (CONFIG.autoFullscreen && fsSupported && matchMedia("(pointer: coarse)").matches) {
+    document.addEventListener("click", (e) => {
+      if (autoFsDone || fsEl() || isSetup() || e.target.closest(".controls")) return;
+      autoFsDone = true;
+      fsRequestedAt = performance.now();
+      enterFullscreen();
+    }, true);
   }
 
   /* ---------------- setup mode ---------------- */
