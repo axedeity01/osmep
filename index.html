@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1716">
+<title>Order Interactive</title>
+<style>
+  :root{
+    --img: none;
+    --ar: 1;
+    --accent: #1f9d55;
+    --badge: #ef3b3b;
+    --page: #0d1716;
+    --glass: rgba(255,255,255,.16);
+    --glass-line: rgba(255,255,255,.32);
+    --panel: #ffffff;
+    --panel-ink: #17202b;
+    --panel-muted: #5d6877;
+    --panel-line: #e3e7ec;
+    --panel-soft: #f3f5f8;
+    --extra-r: 0px;
+    --extra-b: 0px;
+    font-family: "Leelawadee UI", "Noto Sans Thai", "Sukhumvit Set", "Thonburi", Tahoma, system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --panel:#18202a; --panel-ink:#eef2f6; --panel-muted:#9aa6b4; --panel-line:#2b3643; --panel-soft:#222c38;
+    }
+  }
+  :root[data-theme="dark"]{
+    --panel:#18202a; --panel-ink:#eef2f6; --panel-muted:#9aa6b4; --panel-line:#2b3643; --panel-soft:#222c38;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--page);
+    color:#fff;
+    overflow:hidden;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none; user-select:none;
+  }
+  button{font:inherit;color:inherit}
+
+  /* ---------- background: blurred copy of the mockup ---------- */
+  .backdrop{
+    position:fixed; inset:-12%;
+    background:var(--img) center/cover no-repeat;
+    filter:blur(48px) saturate(1.25) brightness(.72);
+    z-index:0;
+  }
+  .backdrop::after{
+    content:""; position:absolute; inset:0;
+    background:radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,.45) 100%);
+  }
+
+  /* ---------- layout ---------- */
+  .viewport{
+    position:relative; z-index:1;
+    height:100vh; height:100dvh;
+    display:grid; place-items:center;
+    padding:16px;
+    padding-right:calc(16px + var(--extra-r));
+    padding-bottom:calc(16px + var(--extra-b));
+    transition:padding .3s ease;
+  }
+  .stage{
+    position:relative;
+    width:min(100%, calc((100vh - 32px - var(--extra-b)) * var(--ar)));
+    width:min(100%, calc((100dvh - 32px - var(--extra-b)) * var(--ar)));
+    aspect-ratio:var(--ar);
+    border-radius:22px;
+    box-shadow:0 30px 80px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06);
+  }
+  .rumble,.jolt{position:absolute; inset:0; border-radius:inherit}
+  .rumble{transform-origin:50% 92%}
+  .mock{
+    display:block; width:100%; height:100%;
+    border-radius:inherit; object-fit:fill;
+    pointer-events:none;
+    -webkit-user-drag:none; -webkit-touch-callout:none;
+  }
+
+  /* ---------- ORDER hotspot (shows the same pixels as the image, so it can be "pressed") ---------- */
+  .hotspot{
+    position:absolute; border:0; padding:0; margin:0;
+    background-color:transparent;
+    background-image:var(--img);
+    background-repeat:no-repeat;
+    cursor:pointer; overflow:hidden;
+    transition:filter .15s ease, transform .15s ease;
+  }
+  .hotspot:hover{filter:brightness(1.08) saturate(1.1)}
+  .hotspot:active{transform:scale(.95)}
+  .hotspot:focus-visible{outline:3px solid #fff; outline-offset:3px}
+  .hotspot.pressed{animation:press .42s cubic-bezier(.3,.7,.4,1.4)}
+  @keyframes press{
+    0%{transform:scale(1)}
+    28%{transform:scale(.86); filter:brightness(.88)}
+    62%{transform:scale(1.07); filter:brightness(1.15)}
+    100%{transform:scale(1)}
+  }
+  .ripple{
+    position:absolute; width:12px; height:12px; margin:-6px 0 0 -6px;
+    border-radius:50%; background:rgba(255,255,255,.75);
+    pointer-events:none; animation:ripple .55s ease-out forwards;
+  }
+  @keyframes ripple{to{transform:scale(28); opacity:0}}
+
+  .hint{position:absolute; pointer-events:none; animation:hint 1.9s ease-out infinite}
+  @keyframes hint{
+    0%{box-shadow:0 0 0 0 rgba(255,255,255,.7)}
+    70%,100%{box-shadow:0 0 0 14px rgba(255,255,255,0)}
+  }
+  .stage.busy .hint, body.setup .hint{display:none}
+
+  /* ---------- cart ---------- */
+  .cart{
+    position:absolute; z-index:5;
+    width:clamp(48px, 13%, 86px); aspect-ratio:1;
+    transform:translate(-50%,-50%);
+  }
+  .cart-btn{
+    position:relative; width:100%; height:100%;
+    border:0; border-radius:50%; padding:0;
+    background:#fff; color:var(--accent);
+    display:grid; place-items:center; cursor:pointer;
+    box-shadow:0 10px 26px -8px rgba(0,0,0,.45), inset 0 -3px 0 rgba(0,0,0,.06);
+  }
+  .cart-btn svg{width:56%; height:56%; overflow:visible}
+  .cart-btn:focus-visible{outline:3px solid #fff; outline-offset:3px}
+  .cart-btn.bump{animation:bump .36s cubic-bezier(.3,.7,.4,1.6)}
+  @keyframes bump{
+    0%{transform:scale(1)}
+    35%{transform:scale(1.22) rotate(-8deg)}
+    70%{transform:scale(.94) rotate(4deg)}
+    100%{transform:scale(1)}
+  }
+  .cart-btn.glow{box-shadow:0 0 0 6px rgba(31,157,85,.35), 0 10px 30px -6px rgba(31,157,85,.8)}
+  .badge{
+    position:absolute; top:-6%; right:-6%;
+    min-width:42%; height:42%; padding:0 6%;
+    border-radius:999px; background:var(--badge); color:#fff;
+    font-weight:700; font-size:clamp(11px, 1.9vmin, 16px);
+    display:grid; place-items:center;
+    box-shadow:0 0 0 2px #fff;
+    transform:scale(0); transition:transform .25s cubic-bezier(.3,.7,.4,1.6);
+    font-variant-numeric:tabular-nums;
+  }
+  .badge.on{transform:scale(1)}
+  .badge.tick{animation:tick .3s ease}
+  @keyframes tick{50%{transform:scale(1.35)}}
+
+  /* ---------- flying things ---------- */
+  .fx{position:absolute; inset:0; pointer-events:none; z-index:6; overflow:visible}
+  .flyer{
+    position:absolute; left:0; top:0; will-change:transform, opacity;
+    line-height:1; font-size:clamp(28px, 9cqw, 64px);
+    filter:drop-shadow(0 6px 8px rgba(0,0,0,.3));
+  }
+  .stage{container-type:inline-size}
+  .flyer img{display:block; width:1.1em; height:1.1em; object-fit:contain}
+  .ghost{position:absolute; left:0; top:0; will-change:transform, opacity}
+  .ghost-img{
+    width:100%; height:100%;
+    background-image:var(--img); background-repeat:no-repeat;
+    border-radius:18px;
+    box-shadow:0 18px 40px -10px rgba(0,0,0,.55), 0 0 0 3px rgba(255,255,255,.9);
+  }
+  .trail{
+    position:absolute; left:0; top:0; width:10px; height:10px; margin:-5px 0 0 -5px;
+    border-radius:50%; background:radial-gradient(circle, #fff 0%, #ffe680 45%, rgba(255,200,60,0) 70%);
+    transform:var(--p);
+    animation:trail .5s ease-out forwards;
+  }
+  @keyframes trail{to{transform:var(--p) scale(.1); opacity:0}}
+  .spark{
+    position:absolute; left:0; top:0; width:8px; height:8px; margin:-4px 0 0 -4px;
+    border-radius:50%; background:var(--c, #ffd23f);
+    animation:spark .55s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  @keyframes spark{
+    from{transform:var(--p) scale(1); opacity:1}
+    to{transform:var(--p) translate(var(--dx),var(--dy)) scale(.2); opacity:0}
+  }
+  .plus{
+    position:absolute; left:0; top:0;
+    font-weight:800; font-size:clamp(14px, 3.4cqw, 22px); color:#fff;
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
+    animation:plus .8s ease-out forwards;
+  }
+  @keyframes plus{
+    from{transform:var(--p) translate(-50%,0); opacity:1}
+    to{transform:var(--p) translate(-50%,-150%); opacity:0}
+  }
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:absolute; left:50%; bottom:6%; z-index:7;
+    transform:translate(-50%, 16px) scale(.96); opacity:0;
+    padding:12px 20px; border-radius:999px;
+    background:rgba(17,24,32,.86); color:#fff;
+    font-weight:600; font-size:clamp(14px, 3.2cqw, 18px); white-space:nowrap;
+    display:flex; align-items:center; gap:10px;
+    box-shadow:0 14px 34px -10px rgba(0,0,0,.6);
+    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+    transition:transform .35s cubic-bezier(.3,.7,.4,1.3), opacity .25s ease;
+    pointer-events:none;
+  }
+  .toast.show{transform:translate(-50%,0) scale(1); opacity:1}
+  .toast .dot{
+    width:22px; height:22px; border-radius:50%; background:var(--accent);
+    display:grid; place-items:center; flex:none;
+  }
+
+  /* ---------- mini cart popover ---------- */
+  .pop{
+    position:absolute; z-index:8; min-width:200px; max-width:min(280px, 80cqw);
+    padding:14px; border-radius:16px;
+    background:var(--panel); color:var(--panel-ink);
+    box-shadow:0 20px 50px -12px rgba(0,0,0,.55);
+    font-size:14px;
+    transform-origin:top right;
+    animation:popIn .2s ease-out;
+  }
+  @keyframes popIn{from{opacity:0; transform:scale(.92)}}
+  .pop h3{margin:0 0 10px; font-size:15px}
+  .pop ul{list-style:none; margin:0 0 12px; padding:0; display:grid; gap:6px}
+  .pop li{display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:10px; background:var(--panel-soft)}
+  .pop li .ic{width:28px; height:28px; display:grid; place-items:center; font-size:22px; flex:none}
+  .pop li .ic img{width:24px; height:24px; object-fit:contain}
+  .pop li .thumb{width:28px; height:28px; border-radius:7px; background-image:var(--img); background-repeat:no-repeat; flex:none}
+  .pop li .n{margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums}
+  .pop .empty{color:var(--panel-muted); margin:0 0 12px}
+  .pop .clear{
+    width:100%; padding:9px; border-radius:10px; border:1px solid var(--panel-line);
+    background:transparent; color:var(--panel-ink); cursor:pointer;
+  }
+  .pop .clear:hover{background:var(--panel-soft)}
+
+  /* ---------- floating controls ---------- */
+  .controls{
+    position:fixed; z-index:20;
+    right:max(12px, env(safe-area-inset-right)); bottom:max(12px, env(safe-area-inset-bottom));
+    display:flex; gap:8px;
+  }
+  .ctl{
+    width:40px; height:40px; border-radius:50%;
+    border:1px solid var(--glass-line); background:var(--glass);
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    display:grid; place-items:center; cursor:pointer; opacity:.7;
+    transition:opacity .2s, transform .2s;
+  }
+  .ctl:hover,.ctl:focus-visible{opacity:1}
+  .ctl:active{transform:scale(.92)}
+  .ctl svg{width:20px; height:20px}
+  body.setup .controls{display:none}
+
+  /* ---------- setup mode ---------- */
+  .edit-layer{position:absolute; inset:0; z-index:9; display:none}
+  body.setup .edit-layer{display:block}
+  body.setup .hotspot{pointer-events:none}
+  .edit-rect,.edit-point{
+    position:absolute; cursor:move; touch-action:none;
+    border:2px dashed #fff; background:rgba(255,214,10,.18);
+    box-shadow:0 0 0 1px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.35);
+  }
+  .edit-rect.food{background:rgba(64,170,255,.18)}
+  .edit-point{width:clamp(56px, 15%, 96px); aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%); background:rgba(255,80,120,.16)}
+  .edit-rect::before,.edit-point::before{
+    content:attr(data-label);
+    position:absolute; left:-2px; bottom:calc(100% + 4px);
+    padding:3px 8px; border-radius:6px; white-space:nowrap;
+    background:#111a; color:#fff; font-size:12px; font-weight:600;
+  }
+  .edit-point::before{left:50%; transform:translateX(-50%)}
+  .handle{
+    position:absolute; right:-9px; bottom:-9px; width:18px; height:18px;
+    border-radius:50%; background:#fff; border:2px solid #111;
+    cursor:nwse-resize; touch-action:none;
+  }
+
+  .panel{
+    position:fixed; z-index:30;
+    top:16px; right:16px; bottom:16px; width:340px;
+    padding:18px; border-radius:18px;
+    background:var(--panel); color:var(--panel-ink);
+    box-shadow:0 24px 60px -16px rgba(0,0,0,.6);
+    overflow:auto; font-size:14px;
+    -webkit-user-select:text; user-select:text;
+  }
+  .panel[hidden]{display:none}
+  .panel header{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+  .panel h2{margin:0; font-size:18px}
+  .panel p{margin:0 0 12px; color:var(--panel-muted); line-height:1.55}
+  .panel .legend{display:grid; gap:6px; margin:0 0 14px; padding:0; list-style:none; color:var(--panel-muted)}
+  .panel .legend i{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:8px; vertical-align:-1px; border:1.5px dashed currentColor}
+  .panel .row{display:flex; gap:8px; margin-bottom:8px}
+  .panel .row > *{flex:1}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:10px 12px; border-radius:10px; cursor:pointer;
+    border:1px solid var(--panel-line); background:var(--panel-soft); color:var(--panel-ink);
+    font-size:14px; text-align:center;
+  }
+  .btn:hover{border-color:var(--panel-muted)}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.icon{flex:none; width:36px; height:36px; padding:0; border-radius:50%}
+  .panel pre{
+    margin:6px 0 8px; padding:12px; border-radius:10px;
+    background:var(--panel-soft); border:1px solid var(--panel-line);
+    font:12px/1.6 ui-monospace, Consolas, monospace; white-space:pre-wrap; word-break:break-all;
+  }
+  .panel .note{font-size:13px; min-height:1em}
+  .panel .note.ok{color:var(--accent)}
+  .panel .note.warn{color:#c2410c}
+
+  .error{
+    position:absolute; inset:0; display:grid; place-items:center; text-align:center;
+    padding:24px; border-radius:inherit; background:rgba(0,0,0,.55); line-height:1.6;
+  }
+  .error[hidden]{display:none}
+  .error code{background:rgba(255,255,255,.15); padding:2px 6px; border-radius:6px}
+
+  .ios-haptic{position:fixed; left:-9999px; top:0; width:1px; height:1px; overflow:hidden; opacity:0}
+
+  @media (min-width:761px){ body.setup{--extra-r:356px} }
+  @media (max-width:760px){
+    .panel{top:auto; left:8px; right:8px; bottom:8px; width:auto; max-height:46vh; border-radius:18px}
+    body.setup{--extra-b:46vh}
+  }
+</style>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+
+<div class="viewport">
+  <main class="stage" id="stage">
+    <div class="rumble" id="rumble">
+      <div class="jolt" id="jolt">
+        <img class="mock" id="mock" alt="Mockup">
+        <span class="hint" id="hint" aria-hidden="true"></span>
+        <button class="hotspot" id="hotspot" type="button" aria-label="ORDER"></button>
+      </div>
+    </div>
+
+    <div class="cart" id="cart">
+      <button class="cart-btn" id="cartBtn" type="button" aria-label="ตะกร้าสินค้า">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2.5 3.5h2.6l2.3 11.2a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.2l1.7-7.3H6.1"/>
+          <circle cx="9.5" cy="20" r="1.4" fill="currentColor"/>
+          <circle cx="17.5" cy="20" r="1.4" fill="currentColor"/>
+        </svg>
+        <span class="badge" id="badge">0</span>
+      </button>
+    </div>
+
+    <div class="fx" id="fx"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <div class="edit-layer" id="editLayer">
+      <div class="edit-rect food" data-key="foodArea" data-label="อาหาร (จุดที่ลอยออก)"><span class="handle"></span></div>
+      <div class="edit-rect" data-key="orderButton" data-label="ปุ่ม ORDER"><span class="handle"></span></div>
+      <div class="edit-point" data-key="cart" data-label="ตะกร้า"></div>
+    </div>
+
+    <div class="error" id="error" hidden></div>
+  </main>
+</div>
+
+<div class="controls" id="controls">
+  <button class="ctl" id="muteBtn" type="button" aria-label="ปิด/เปิดเสียง"></button>
+  <button class="ctl" id="setupBtn" type="button" aria-label="ตั้งค่าตำแหน่ง">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+    </svg>
+  </button>
+</div>
+
+<aside class="panel" id="panel" hidden aria-label="ตั้งค่า">
+  <header>
+    <h2>ตั้งค่าตำแหน่ง</h2>
+    <button class="btn icon" id="closeSetup" type="button" aria-label="ปิด">✕</button>
+  </header>
+  <p>ลากกรอบให้ตรงกับภาพ ใช้จุดกลมมุมขวาล่างเพื่อย่อ/ขยาย ค่าจะถูกจำไว้ในเบราว์เซอร์นี้อัตโนมัติ</p>
+  <ul class="legend">
+    <li><i style="color:#e0b400"></i>ปุ่ม ORDER: พื้นที่ที่กดได้</li>
+    <li><i style="color:#3a9be0"></i>อาหาร: ส่วนของภาพที่จะลอยเข้าตะกร้า</li>
+    <li><i style="color:#e0507a;border-radius:50%"></i>ตะกร้า: ตำแหน่งไอคอนตะกร้า</li>
+  </ul>
+  <div class="row">
+    <label class="btn" for="fileInput">🖼️ เปลี่ยนรูป…</label>
+    <button class="btn" id="resetImage" type="button">ใช้รูปตาม CONFIG</button>
+  </div>
+  <input id="fileInput" type="file" accept="image/*" hidden>
+  <div class="row">
+    <button class="btn primary" id="testBtn" type="button">▶ ทดสอบ ORDER</button>
+    <button class="btn" id="resetPos" type="button">คืนค่าตำแหน่ง</button>
+  </div>
+  <pre id="readout"></pre>
+  <div class="row"><button class="btn" id="copyBtn" type="button">📋 คัดลอกค่าไปวางใน CONFIG</button></div>
+  <p class="note" id="note"></p>
+</aside>
+
+<script>
+/* =====================================================================
+   ตั้งค่า: แก้ตรงนี้ได้เลย (ตัวเลขตำแหน่งเป็น % ของความกว้าง/สูงของรูป)
+
+   เปลี่ยนรูป mockup:
+     1) เอารูปใหม่ไปวางในโฟลเดอร์ img/ แล้วแก้ค่า image ด้านล่าง
+        (หรือตั้งชื่อทับไฟล์ img/Order.png ไปเลย)
+     2) เปิดหน้าเว็บโดยเติม ?setup ท้ายลิงก์ (เช่น index.html?setup) หรือกดปุ่ม S บนคีย์บอร์ด
+        แล้วลากกรอบ ORDER / อาหาร / ตะกร้า ให้ตรงกับรูปใหม่
+     3) กด "คัดลอกค่า" แล้วเอามาวางแทน orderButton / foodArea / cart ด้านล่าง
+   ===================================================================== */
+const CONFIG = {
+  image: "img/Order.png",
+
+  orderButton: { x: 41.5, y: 57.4, w: 16.8, h: 6.5 },  // ตำแหน่งปุ่ม ORDER บนรูป
+  foodArea:    { x: 37.6, y: 24.8, w: 24.8, h: 30.1 }, // ส่วนของรูปที่จะลอยเข้าตะกร้า
+  cart:        { x: 87.5, y: 11.5 },                   // จุดกึ่งกลางไอคอนตะกร้า
+  buttonRadius: 0.16,                                  // ความโค้งมุมปุ่ม (สัดส่วนของความสูงปุ่ม)
+
+  // ไอเท็มที่ลอยตามเข้าไปในตะกร้า ใช้ emoji หรือ path รูปก็ได้ เช่น "img/pizza.png"
+  flyItems: ["🍕", "🥤", "🍗", "🍟", "🍔", "🌭"],
+  itemsPerOrder: 6,     // จำนวนไอเท็มที่ลอยต่อการกด 1 ครั้ง
+  streamGap: 150,       // ระยะห่างระหว่างไอเท็มแต่ละชิ้น (ms)
+
+  sound: true,          // เปิดเสียงเป็นค่าเริ่มต้น
+  volume: 0.6,
+  // ใช้ไฟล์เสียงของตัวเองได้ เช่น "sound/pop.mp3" (เว้นว่าง = ใช้เสียงที่สร้างในโปรแกรม)
+  soundFiles: { press: "", whoosh: "", pop: "", success: "" },
+
+  vibrate: true,        // สั่นบนมือถือ
+  shake: true,          // หน้าจอโยก/ขยับขณะของเข้าตะกร้า
+  hintPulse: true,      // วงแสงกะพริบชวนกดรอบปุ่ม ORDER
+  showSetupButton: false, // true = แสดงปุ่ม ⚙ ให้ทุกคนเห็น (ถึงซ่อนไว้ ก็ยังเข้าได้ด้วย ?setup ท้ายลิงก์ หรือกดปุ่ม S)
+
+  text: {
+    added: "เพิ่มลงตะกร้าแล้ว!",
+    cartTitle: "ตะกร้าของฉัน",
+    empty: "ตะกร้ายังว่างอยู่",
+    clear: "ล้างตะกร้า",
+    setMenu: "ชุดเมนู",
+  },
+};
+</script>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------------- helpers ---------------- */
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const round1 = (v) => Math.round(v * 10) / 10;
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
+    del(k) { try { localStorage.removeItem(k); } catch {} },
+  };
+
+  const stage = $("stage"), rumble = $("rumble"), jolt = $("jolt"), mock = $("mock");
+  const hotspot = $("hotspot"), hint = $("hint"), cart = $("cart"), cartBtn = $("cartBtn");
+  const badge = $("badge"), fx = $("fx"), toast = $("toast"), errorBox = $("error");
+
+  /* ---------------- state (CONFIG + saved setup) ---------------- */
+  const LAYOUT_KEYS = ["orderButton", "foodArea", "cart"];
+  const SAVE_KEY = "orderInteractive.setup.v1";
+  const baseSig = JSON.stringify({ image: CONFIG.image, ...Object.fromEntries(LAYOUT_KEYS.map(k => [k, CONFIG[k]])) });
+  const S = {};
+  function resetLayout() { LAYOUT_KEYS.forEach(k => S[k] = { ...CONFIG[k] }); }
+  resetLayout();
+  S.imageSrc = CONFIG.image;
+  S.imageName = null;
+
+  // Saved values only apply while CONFIG is unchanged; editing CONFIG in the file always wins.
+  const saved = store.get(SAVE_KEY);
+  if (saved && saved.sig === baseSig) {
+    LAYOUT_KEYS.forEach(k => { if (saved[k]) S[k] = saved[k]; });
+    if (saved.imageData) { S.imageSrc = saved.imageData; S.imageName = saved.imageName || null; }
+  }
+  function save() {
+    const data = { sig: baseSig };
+    LAYOUT_KEYS.forEach(k => data[k] = S[k]);
+    if (S.imageSrc !== CONFIG.image) { data.imageData = S.imageSrc; data.imageName = S.imageName; }
+    if (store.set(SAVE_KEY, data)) return true;
+    delete data.imageData; delete data.imageName;   // image too big for storage: keep positions only
+    store.set(SAVE_KEY, data);
+    return false;
+  }
+
+  /* ---------------- image ---------------- */
+  function cssUrl(src) { return `url("${String(src).replace(/["\\]/g, "\\$&")}")`; }
+  function setImage(src, onDone) {
+    const probe = new Image();
+    probe.onload = () => {
+      mock.src = src;
+      document.documentElement.style.setProperty("--img", cssUrl(src));
+      document.documentElement.style.setProperty("--ar", (probe.naturalWidth / probe.naturalHeight).toFixed(5));
+      errorBox.hidden = true;
+      requestAnimationFrame(layout);
+      onDone && onDone(true);
+    };
+    probe.onerror = () => {
+      errorBox.innerHTML = "";
+      const box = document.createElement("div");
+      box.innerHTML = `ไม่พบรูปภาพ<br><code></code><br><small>วางไฟล์ไว้ในโฟลเดอร์ img/ ข้างไฟล์ index.html<br>หรือแก้ค่า <b>image</b> ใน CONFIG</small>`;
+      box.querySelector("code").textContent = src.startsWith("data:") ? "(รูปที่เลือก)" : src;
+      errorBox.appendChild(box);
+      errorBox.hidden = false;
+      onDone && onDone(false);
+    };
+    probe.src = src;
+  }
+
+  /* ---------------- layout ---------------- */
+  function placeRect(el, r) {
+    el.style.left = r.x + "%"; el.style.top = r.y + "%";
+    el.style.width = r.w + "%"; el.style.height = r.h + "%";
+  }
+  // Show exactly the pixels of the image under rect r inside el (works at any size).
+  function cropBg(el, r) {
+    el.style.backgroundSize = `${10000 / r.w}% ${10000 / r.h}%`;
+    el.style.backgroundPosition = `${r.w >= 100 ? 0 : (r.x / (100 - r.w)) * 100}% ${r.h >= 100 ? 0 : (r.y / (100 - r.h)) * 100}%`;
+  }
+  const editEls = {};
+  document.querySelectorAll("#editLayer [data-key]").forEach(el => editEls[el.dataset.key] = el);
+
+  function layout() {
+    const b = S.orderButton;
+    placeRect(hotspot, b); cropBg(hotspot, b);
+    placeRect(hint, b);
+    const radius = stage.clientHeight * (b.h / 100) * CONFIG.buttonRadius + "px";
+    hotspot.style.borderRadius = hint.style.borderRadius = radius;
+    hint.style.display = CONFIG.hintPulse ? "" : "none";
+
+    cart.style.left = S.cart.x + "%"; cart.style.top = S.cart.y + "%";
+
+    placeRect(editEls.orderButton, S.orderButton);
+    placeRect(editEls.foodArea, S.foodArea);
+    editEls.cart.style.left = S.cart.x + "%"; editEls.cart.style.top = S.cart.y + "%";
+    if (document.body.classList.contains("setup")) updateReadout();
+  }
+  new ResizeObserver(layout).observe(stage);
+
+  /* ---------------- sound (Web Audio, no files needed) ---------------- */
+  const Sound = (() => {
+    let ctx = null, master = null, noiseBuf = null;
+    let on = store.get("orderInteractive.sound");
+    if (on === null) on = CONFIG.sound;
+    const files = {};
+    Object.entries(CONFIG.soundFiles || {}).forEach(([k, src]) => { if (src) files[k] = new Audio(src); });
+
+    function ensure() {
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = CONFIG.volume;
+        master.connect(ctx.destination);
+        noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      if (ctx.state === "suspended") ctx.resume();
+      return ctx;
+    }
+    function tone({ f, f2 = f, type = "sine", dur = 0.15, gain = 0.4, at = 0, attack = 0.005 }) {
+      const t = ctx.currentTime + at;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(f, t);
+      if (f2 !== f) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(master);
+      o.start(t); o.stop(t + dur + 0.02);
+    }
+    function noise({ dur = 0.3, from = 400, to = 2400, gain = 0.2, at = 0 }) {
+      const t = ctx.currentTime + at;
+      const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 1.2;
+      bp.frequency.setValueAtTime(from, t);
+      bp.frequency.exponentialRampToValueAtTime(to, t + dur);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + dur * 0.35);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(bp).connect(g).connect(master);
+      src.start(t); src.stop(t + dur + 0.02);
+    }
+    function playFile(k) {
+      const a = files[k];
+      if (!a) return false;
+      const c = a.cloneNode(); c.volume = CONFIG.volume; c.play().catch(() => {});
+      return true;
+    }
+    const NOTES = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98];
+
+    return {
+      get on() { return on; },
+      toggle() { on = !on; store.set("orderInteractive.sound", on); if (on) ensure(); return on; },
+      unlock() { if (on) ensure(); },
+      press() {
+        if (!on || playFile("press") || !ensure()) return;
+        tone({ f: 1700, f2: 500, type: "square", dur: 0.05, gain: 0.12 });
+        tone({ f: 420, f2: 640, type: "sine", dur: 0.12, gain: 0.35, at: 0.01 });
+      },
+      whoosh() {
+        if (!on || playFile("whoosh") || !ensure()) return;
+        noise({ dur: 0.38, from: 350, to: 2600, gain: 0.22 });
+      },
+      pop(i) {
+        if (!on || playFile("pop") || !ensure()) return;
+        const f = NOTES[i % NOTES.length];
+        tone({ f: f * 0.55, f2: f * 1.25, type: "sine", dur: 0.09, gain: 0.45 });
+        tone({ f: f * 2, type: "triangle", dur: 0.16, gain: 0.12, at: 0.03 });
+      },
+      success() {
+        if (!on || playFile("success") || !ensure()) return;
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) =>
+          tone({ f, type: "triangle", dur: 0.32, gain: 0.3, at: i * 0.075 }));
+        tone({ f: 1567.98, type: "sine", dur: 0.6, gain: 0.14, at: 0.3, attack: 0.02 });
+      },
+    };
+  })();
+
+  /* ---------------- haptics ---------------- */
+  const Haptic = (() => {
+    const canVibrate = typeof navigator.vibrate === "function";
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    let iosLabel = null;
+    // iOS Safari has no vibrate(); toggling a native <input switch> gives a light haptic tick (iOS 18+).
+    if (!canVibrate && isIOS) {
+      iosLabel = document.createElement("label");
+      iosLabel.className = "ios-haptic"; iosLabel.setAttribute("aria-hidden", "true");
+      const input = document.createElement("input");
+      input.type = "checkbox"; input.setAttribute("switch", ""); input.tabIndex = -1;
+      iosLabel.appendChild(input);
+      iosLabel.addEventListener("click", e => e.stopPropagation());
+      document.body.appendChild(iosLabel);
+    }
+    return {
+      buzz(pattern) {
+        if (!CONFIG.vibrate) return;
+        if (canVibrate) { try { navigator.vibrate(pattern); } catch {} }
+        else if (iosLabel) { iosLabel.click(); }
+      },
+    };
+  })();
+
+  /* ---------------- geometry ---------------- */
+  function stageSize() { return { W: stage.clientWidth, H: stage.clientHeight }; }
+  function cartPoint() { const { W, H } = stageSize(); return { x: S.cart.x / 100 * W, y: S.cart.y / 100 * H }; }
+  function foodRectPx() {
+    const { W, H } = stageSize(), r = S.foodArea;
+    return { x: r.x / 100 * W, y: r.y / 100 * H, w: r.w / 100 * W, h: r.h / 100 * H };
+  }
+
+  /* ---------------- motion ---------------- */
+  let rumbleAnim = null;
+  function startRumble() {
+    if (!CONFIG.shake || reduceMotion) return;
+    if (rumbleAnim && rumbleAnim.playState === "running") {
+      rumbleAnim.effect.updateTiming({ iterations: Infinity });
+      return;
+    }
+    rumbleAnim = rumble.animate([
+      { transform: "translate(0,0) rotate(0deg)" },
+      { transform: "translate(-0.7%, 0.3%) rotate(-0.9deg)" },
+      { transform: "translate(0.7%, -0.2%) rotate(0.8deg)" },
+      { transform: "translate(-0.45%, 0.2%) rotate(-0.55deg)" },
+      { transform: "translate(0.45%, 0) rotate(0.45deg)" },
+      { transform: "translate(0,0) rotate(0deg)" },
+    ], { duration: 340, iterations: Infinity, easing: "ease-in-out" });
+  }
+  function stopRumble() {
+    if (!rumbleAnim) return;
+    const it = rumbleAnim.effect.getComputedTiming().currentIteration || 0;
+    rumbleAnim.effect.updateTiming({ iterations: it + 1 });  // finish the current sway, then rest
+  }
+  function joltTowardCart(strength = 1) {
+    if (!CONFIG.shake || reduceMotion) return;
+    const { W, H } = stageSize(), c = cartPoint();
+    const dx = c.x - W / 2, dy = c.y - H / 2, len = Math.hypot(dx, dy) || 1;
+    const k = Math.min(W, H) * 0.012 * strength;
+    jolt.animate([
+      { transform: "translate(0,0) scale(1)" },
+      { transform: `translate(${dx / len * k}px, ${dy / len * k}px) scale(1.012)` },
+      { transform: `translate(${-dx / len * k * 0.4}px, ${-dy / len * k * 0.4}px) scale(.996)` },
+      { transform: "translate(0,0) scale(1)" },
+    ], { duration: 260, easing: "ease-out" });
+  }
+  function retrigger(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+  function spawn(cls, x, y, extra) {
+    const el = document.createElement("span");
+    el.className = cls;
+    el.style.setProperty("--p", `translate(${x}px, ${y}px)`);
+    if (extra) extra(el);
+    el.addEventListener("animationend", () => el.remove(), { once: true });
+    fx.appendChild(el);
+    return el;
+  }
+  function sparkle(x, y) {
+    const colors = ["#ffd23f", "#ff6b6b", "#4ade80", "#60a5fa", "#ffffff", "#f472b6"];
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 + rand(-0.2, 0.2), d = rand(28, 52);
+      spawn("spark", x, y, el => {
+        el.style.setProperty("--dx", Math.cos(a) * d + "px");
+        el.style.setProperty("--dy", Math.sin(a) * d + "px");
+        el.style.setProperty("--c", colors[i % colors.length]);
+      });
+    }
+  }
+  function plusOne(x, y) {
+    spawn("plus", x, y - stage.clientWidth * 0.06, el => el.textContent = "+1");
+  }
+
+  const ease = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  // Fly an element from p0 to p2 along a curved path, shrinking into the cart.
+  function flight(el, p0, p2, { dur = 760, lift = 0.25, spin = 0, scaleFrom = 1, scaleTo = 0.3, trail = false, onEnd }) {
+    const { W, H } = stageSize();
+    const p1 = {
+      x: p0.x + (p2.x - p0.x) * rand(0.15, 0.45) + rand(-0.08, 0.08) * W,
+      y: Math.min(p0.y, p2.y) - lift * H,
+    };
+    if (reduceMotion) { dur *= 0.6; spin = 0; trail = false; }
+    const t0 = performance.now();
+    let frame = 0;
+    (function step() {
+      const t = clamp((performance.now() - t0) / dur, 0, 1), e = ease(t), u = 1 - e;
+      const x = u * u * p0.x + 2 * u * e * p1.x + e * e * p2.x;
+      const y = u * u * p0.y + 2 * u * e * p1.y + e * e * p2.y;
+      const s = scaleFrom + (scaleTo - scaleFrom) * e * e;
+      el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(${spin * e}deg) scale(${s})`;
+      el.style.opacity = t > 0.9 ? String((1 - t) / 0.1) : "1";
+      if (trail && ++frame % 3 === 0 && t < 0.92) spawn("trail", x, y);
+      if (t < 1) requestAnimationFrame(step);
+      else { el.remove(); onEnd && onEnd(); }
+    })();
+  }
+
+  /* ---------------- cart contents ---------------- */
+  const SET_KEY = "__set__";
+  let cartCount = 0;
+  const cartItems = new Map();
+  function addToCart(key) {
+    cartCount++;
+    cartItems.set(key, (cartItems.get(key) || 0) + 1);
+    badge.textContent = cartCount > 99 ? "99+" : String(cartCount);
+    badge.classList.add("on");
+    retrigger(badge, "tick");
+  }
+  function clearCart() {
+    cartCount = 0; cartItems.clear();
+    badge.textContent = "0"; badge.classList.remove("on");
+  }
+
+  const isImagePath = (v) => /\.(png|jpe?g|gif|webp|svg|avif)(\?.*)?$/i.test(v);
+  function itemNode(v) {
+    if (isImagePath(v)) { const img = document.createElement("img"); img.src = v; img.alt = ""; return img; }
+    return document.createTextNode(v);
+  }
+
+  /* ---------------- the ORDER sequence ---------------- */
+  let busy = 0;
+  function arrive(key, popIndex) {
+    const c = cartPoint();
+    addToCart(key);
+    retrigger(cartBtn, "bump");
+    sparkle(c.x, c.y);
+    plusOne(c.x, c.y);
+    Sound.pop(popIndex);
+    Haptic.buzz(22);
+    joltTowardCart(key === SET_KEY ? 1.6 : 1);
+  }
+
+  function order(evt) {
+    if (busy >= 4) return;          // avoid flooding the screen on frantic tapping
+    busy++;
+    stage.classList.add("busy");
+    closePop();
+    Sound.unlock();
+    Sound.press();
+    Haptic.buzz(15);
+
+    // press feedback on the button itself
+    retrigger(hotspot, "pressed");
+    const hb = hotspot.getBoundingClientRect();
+    const rip = document.createElement("span");
+    rip.className = "ripple";
+    const px = evt && evt.clientX ? evt.clientX - hb.left : hb.width / 2;
+    const py = evt && evt.clientY ? evt.clientY - hb.top : hb.height / 2;
+    rip.style.left = px + "px"; rip.style.top = py + "px";
+    rip.addEventListener("animationend", () => rip.remove(), { once: true });
+    hotspot.appendChild(rip);
+
+    startRumble();
+
+    const n = Math.max(0, CONFIG.itemsPerOrder | 0);
+    const pool = [...CONFIG.flyItems].sort(() => Math.random() - 0.5);
+    let remaining = n + 1, pops = 0, added = 0;
+    const done = (key) => {
+      arrive(key, pops++);
+      added++;
+      if (--remaining === 0) finish(added);
+    };
+
+    // 1) the food picture itself lifts off and flies into the cart
+    setTimeout(() => {
+      const r = foodRectPx(), c = cartPoint();
+      const ghost = document.createElement("div");
+      ghost.className = "ghost";
+      ghost.style.width = r.w + "px"; ghost.style.height = r.h + "px";
+      const img = document.createElement("div");
+      img.className = "ghost-img";
+      cropBg(img, S.foodArea);
+      ghost.appendChild(img);
+      ghost.style.transform = `translate(${r.x + r.w / 2}px, ${r.y + r.h / 2}px) translate(-50%, -50%)`;
+      fx.appendChild(ghost);
+      img.animate([{ transform: "scale(1)" }, { transform: "scale(1.12)" }, { transform: "scale(1.04)" }],
+        { duration: 220, easing: "ease-out", fill: "forwards" });
+      Sound.whoosh();
+      const cartPx = cart.getBoundingClientRect().width;
+      setTimeout(() => flight(ghost, { x: r.x + r.w / 2, y: r.y + r.h / 2 }, c, {
+        dur: 820, lift: 0.2, spin: rand(-14, 14), scaleTo: (cartPx * 0.7) / Math.max(r.w, r.h),
+        onEnd: () => done(SET_KEY),
+      }), 200);
+    }, 60);
+
+    // 2) a stream of item icons keeps flying in after it
+    for (let i = 0; i < n; i++) {
+      setTimeout(() => {
+        const r = foodRectPx(), c = cartPoint();
+        const v = pool.length ? pool[i % pool.length] : "⭐";
+        const el = document.createElement("span");
+        el.className = "flyer";
+        el.appendChild(itemNode(v));
+        const p0 = { x: r.x + r.w * rand(0.2, 0.8), y: r.y + r.h * rand(0.25, 0.8) };
+        el.style.transform = `translate(${p0.x}px, ${p0.y}px) translate(-50%, -50%) scale(.2)`;
+        fx.appendChild(el);
+        if (i % 2 === 0) Sound.whoosh();
+        flight(el, p0, c, {
+          dur: rand(680, 860), lift: rand(0.16, 0.32), spin: rand(-360, 360),
+          scaleFrom: 1.1, scaleTo: 0.35, trail: true,
+          onEnd: () => done(v),
+        });
+      }, 360 + i * CONFIG.streamGap);
+    }
+  }
+
+  let toastTimer = 0;
+  function finish(n) {
+    busy--;
+    Sound.success();
+    Haptic.buzz([40, 60, 40, 60, 120]);
+    cartBtn.classList.add("glow");
+    setTimeout(() => cartBtn.classList.remove("glow"), 700);
+    toast.innerHTML = `<span class="dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>`;
+    toast.append(`${CONFIG.text.added}  +${n}`);
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 1900);
+    if (busy === 0) { stopRumble(); stage.classList.remove("busy"); }
+  }
+
+  hotspot.addEventListener("click", (e) => { if (!document.body.classList.contains("setup")) order(e); });
+
+  /* ---------------- mini cart popover ---------------- */
+  let pop = null;
+  function closePop() { if (pop) { pop.remove(); pop = null; } }
+  function openPop() {
+    closePop();
+    pop = document.createElement("div");
+    pop.className = "pop";
+    pop.addEventListener("click", e => e.stopPropagation());
+    const h = document.createElement("h3"); h.textContent = CONFIG.text.cartTitle; pop.appendChild(h);
+    if (!cartCount) {
+      const p = document.createElement("p"); p.className = "empty"; p.textContent = CONFIG.text.empty; pop.appendChild(p);
+    } else {
+      const ul = document.createElement("ul");
+      for (const [k, n] of cartItems) {
+        const li = document.createElement("li");
+        if (k === SET_KEY) {
+          const t = document.createElement("span"); t.className = "thumb"; cropBg(t, S.foodArea); li.appendChild(t);
+          li.append(CONFIG.text.setMenu);
+        } else {
+          const ic = document.createElement("span"); ic.className = "ic"; ic.appendChild(itemNode(k)); li.appendChild(ic);
+        }
+        const c = document.createElement("span"); c.className = "n"; c.textContent = "× " + n; li.appendChild(c);
+        ul.appendChild(li);
+      }
+      pop.appendChild(ul);
+      const btn = document.createElement("button");
+      btn.className = "clear"; btn.type = "button"; btn.textContent = CONFIG.text.clear;
+      btn.addEventListener("click", () => { clearCart(); closePop(); });
+      pop.appendChild(btn);
+    }
+    stage.appendChild(pop);
+    // anchor near the cart, kept inside the stage
+    const cp = cartPoint(), { W, H } = stageSize(), half = cart.clientWidth / 2 + 10;
+    const pw = pop.offsetWidth, ph = pop.offsetHeight;
+    let left = S.cart.x > 50 ? cp.x - pw + half - 10 : cp.x - half + 10;
+    let top = S.cart.y > 60 ? cp.y - half - ph : cp.y + half;
+    pop.style.left = clamp(left, 8, Math.max(8, W - pw - 8)) + "px";
+    pop.style.top = clamp(top, 8, Math.max(8, H - ph - 8)) + "px";
+    pop.style.transformOrigin = `${S.cart.x > 50 ? "right" : "left"} ${S.cart.y > 60 ? "bottom" : "top"}`;
+  }
+  cartBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (document.body.classList.contains("setup")) return;
+    retrigger(cartBtn, "bump");
+    pop ? closePop() : openPop();
+  });
+  document.addEventListener("click", closePop);
+
+  /* ---------------- sound toggle ---------------- */
+  const muteBtn = $("muteBtn");
+  const ICON_ON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>`;
+  const ICON_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 6 6M22 9l-6 6"/></svg>`;
+  function renderMute() { muteBtn.innerHTML = Sound.on ? ICON_ON : ICON_OFF; muteBtn.setAttribute("aria-pressed", String(!Sound.on)); }
+  muteBtn.addEventListener("click", (e) => { e.stopPropagation(); Sound.toggle(); renderMute(); });
+  renderMute();
+
+  /* ---------------- setup mode ---------------- */
+  const panel = $("panel"), readout = $("readout"), note = $("note"), setupBtn = $("setupBtn");
+  if (!CONFIG.showSetupButton) setupBtn.style.display = "none";
+
+  function setNote(msg, kind = "") { note.textContent = msg; note.className = "note " + kind; }
+  function configText() {
+    const r = (o) => "{ " + Object.entries(o).map(([k, v]) => `${k}: ${round1(v)}`).join(", ") + " }";
+    const img = S.imageSrc === CONFIG.image ? CONFIG.image : `img/${S.imageName || "ชื่อรูปใหม่.png"}`;
+    return `image: "${img}",\norderButton: ${r(S.orderButton)},\nfoodArea:    ${r(S.foodArea)},\ncart:        ${r(S.cart)},`;
+  }
+  function updateReadout() { readout.textContent = configText(); }
+
+  function openSetup() {
+    closePop();
+    document.body.classList.add("setup");
+    panel.hidden = false;
+    setNote("");
+    requestAnimationFrame(layout);
+  }
+  function closeSetup() {
+    document.body.classList.remove("setup");
+    panel.hidden = true;
+    requestAnimationFrame(layout);
+  }
+  setupBtn.addEventListener("click", (e) => { e.stopPropagation(); openSetup(); });
+  $("closeSetup").addEventListener("click", closeSetup);
+  $("testBtn").addEventListener("click", () => order());
+  $("resetPos").addEventListener("click", () => { resetLayout(); layout(); save(); setNote("คืนค่าตำแหน่งตาม CONFIG แล้ว", "ok"); });
+  $("resetImage").addEventListener("click", () => {
+    S.imageSrc = CONFIG.image; S.imageName = null;
+    setImage(S.imageSrc); save(); updateReadout();
+    setNote("กลับไปใช้รูปตาม CONFIG แล้ว", "ok");
+  });
+
+  function loadFile(file) {
+    if (!file || !file.type.startsWith("image/")) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      S.imageSrc = fr.result; S.imageName = file.name;
+      setImage(S.imageSrc, (ok) => {
+        if (!ok) return setNote("เปิดรูปนี้ไม่ได้", "warn");
+        const kept = save();
+        updateReadout();
+        setNote(kept
+          ? `ใช้ "${file.name}" แล้ว · ลากกรอบให้ตรงปุ่มในรูปใหม่ · ถ้าจะใช้ถาวร ให้ก๊อปไฟล์ไปไว้ใน img/ แล้ววางค่าลงใน CONFIG`
+          : `ใช้ "${file.name}" ได้จนกว่าจะรีเฟรช (รูปใหญ่เกินกว่าจะจำในเบราว์เซอร์) · ให้ก๊อปไฟล์ไปไว้ใน img/ แล้วแก้ CONFIG`,
+          kept ? "ok" : "warn");
+      });
+    };
+    fr.readAsDataURL(file);
+  }
+  $("fileInput").addEventListener("change", (e) => { loadFile(e.target.files[0]); e.target.value = ""; });
+  document.addEventListener("dragover", (e) => { if (document.body.classList.contains("setup")) e.preventDefault(); });
+  document.addEventListener("drop", (e) => {
+    if (!document.body.classList.contains("setup")) return;
+    e.preventDefault();
+    loadFile(e.dataTransfer.files[0]);
+  });
+
+  $("copyBtn").addEventListener("click", async () => {
+    const text = configText();
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {}
+    if (!ok) {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+    }
+    setNote(ok ? "คัดลอกแล้ว · เปิด index.html ด้วย Notepad แล้ววางแทนค่าเดิมใน CONFIG" : "คัดลอกอัตโนมัติไม่ได้ ให้ลากเลือกข้อความด้านบนแล้วกด Ctrl+C", ok ? "ok" : "warn");
+  });
+
+  // drag / resize the edit boxes
+  function startDrag(e, key, mode) {
+    e.preventDefault(); e.stopPropagation();
+    const sr = stage.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY, o = { ...S[key] };
+    const target = e.currentTarget;
+    try { target.setPointerCapture(e.pointerId); } catch {}
+    const move = (ev) => {
+      const dx = (ev.clientX - sx) / sr.width * 100, dy = (ev.clientY - sy) / sr.height * 100;
+      const r = S[key];
+      if (mode === "resize") {
+        r.w = clamp(o.w + dx, 2, 100 - o.x);
+        r.h = clamp(o.h + dy, 2, 100 - o.y);
+      } else if ("w" in o) {
+        r.x = clamp(o.x + dx, 0, 100 - o.w);
+        r.y = clamp(o.y + dy, 0, 100 - o.h);
+      } else {
+        r.x = clamp(o.x + dx, 0, 100);
+        r.y = clamp(o.y + dy, 0, 100);
+      }
+      layout();
+    };
+    const up = () => {
+      target.removeEventListener("pointermove", move);
+      target.removeEventListener("pointerup", up);
+      target.removeEventListener("pointercancel", up);
+      save();
+    };
+    target.addEventListener("pointermove", move);
+    target.addEventListener("pointerup", up);
+    target.addEventListener("pointercancel", up);
+  }
+  Object.entries(editEls).forEach(([key, el]) => {
+    el.addEventListener("pointerdown", (e) => startDrag(e, key, "move"));
+    const h = el.querySelector(".handle");
+    if (h) h.addEventListener("pointerdown", (e) => startDrag(e, key, "resize"));
+  });
+
+  /* ---------------- keyboard ---------------- */
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest && e.target.closest("input, textarea")) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === "s") document.body.classList.contains("setup") ? closeSetup() : openSetup();
+    else if (k === "m") { Sound.toggle(); renderMute(); }
+    else if (k === "escape") { closePop(); if (document.body.classList.contains("setup")) closeSetup(); }
+  });
+
+  /* ---------------- go ---------------- */
+  setImage(S.imageSrc, (ok) => {
+    if (!ok && S.imageSrc !== CONFIG.image) {   // a remembered custom image went missing: fall back
+      S.imageSrc = CONFIG.image; S.imageName = null; setImage(S.imageSrc);
+    }
+  });
+  if (/[?&]setup\b/.test(location.search)) openSetup();
+})();
+</script>
+</body>
+</html>
