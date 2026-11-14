@@ -359,6 +359,25 @@ const CONFIG = {
   };
   const isSetup = () => document.body.classList.contains("setup");
 
+  /* ---------------- always show the latest published version ---------------- */
+  // GitHub Pages lets browsers reuse a page for 10 minutes. If a newer one is online, reload once.
+  const online = /^https?:$/.test(location.protocol);
+  const pageStamp = Date.parse(document.lastModified) || 0;
+  if (online) {
+    fetch(location.pathname, { cache: "reload" }).then(res => {
+      const live = Date.parse(res.headers.get("last-modified") || "");
+      if (!live || live <= pageStamp + 2000) return;
+      let last = 0;
+      try { last = +sessionStorage.getItem("orderInteractive.reloadedAt") || 0; } catch {}
+      if (Date.now() - last < 15000) return;   // never get stuck reloading
+      try { sessionStorage.setItem("orderInteractive.reloadedAt", String(Date.now())); } catch {}
+      location.reload();
+    }).catch(() => {});
+  }
+  // Tag the image with this version so a replaced image shows up right after each update.
+  const versioned = (src) => online && pageStamp && !/^(data:|blob:)/.test(src)
+    ? src + (src.includes("?") ? "&" : "?") + "v=" + pageStamp : src;
+
   const stage = $("stage"), scene = $("scene"), rumble = $("rumble"), jolt = $("jolt"), mock = $("mock");
   const hotspot = $("hotspot"), hint = $("hint"), foodPop = $("foodPop"), fx = $("fx"), errorBox = $("error");
 
@@ -425,11 +444,12 @@ const CONFIG = {
   }
 
   function setImage(src, onDone) {
+    const url = versioned(src);
     const probe = new Image();
     probe.onload = () => {
-      mock.src = src;
+      mock.src = url;
       imgAR = probe.naturalWidth / probe.naturalHeight;
-      document.documentElement.style.setProperty("--img", cssUrl(src));
+      document.documentElement.style.setProperty("--img", cssUrl(url));
       applySurround(probe);
       errorBox.hidden = true;
       layout();
@@ -444,7 +464,7 @@ const CONFIG = {
       errorBox.hidden = false;
       onDone && onDone(false);
     };
-    probe.src = src;
+    probe.src = url;
   }
 
   /* ---------------- layout ---------------- */
