@@ -3,17 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0d1716">
+<meta name="theme-color" content="#0d1716" id="themeColor">
+<!-- "Add to Home Screen" on iPhone opens it full screen, without the browser bars -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Order">
 <title>Order Interactive</title>
 <style>
   :root{
     --img: none;
-    --ar: 1;
     --accent: #1f9d55;
     --badge: #ef3b3b;
     --page: #0d1716;
-    --glass: rgba(255,255,255,.16);
-    --glass-line: rgba(255,255,255,.32);
+    --glass: rgba(0,0,0,.18);
+    --glass-line: rgba(255,255,255,.4);
     --panel: #ffffff;
     --panel-ink: #17202b;
     --panel-muted: #5d6877;
@@ -33,7 +37,8 @@
   }
 
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0}
+  html,body{height:100%; margin:0; overscroll-behavior:none}
+  html{background:var(--page)}
   body{
     background:var(--page);
     color:#fff;
@@ -42,46 +47,32 @@
     -webkit-tap-highlight-color:transparent;
     -webkit-user-select:none; user-select:none;
   }
-  button{font:inherit;color:inherit}
+  button{font:inherit; color:inherit}
 
-  /* ---------- background: blurred copy of the mockup ---------- */
+  /* Fallback surround when the image's edge colour can't be read (e.g. opened as a local file) */
   .backdrop{
     position:fixed; inset:-12%;
     background:var(--img) center/cover no-repeat;
     filter:blur(48px) saturate(1.25) brightness(.72);
-    z-index:0;
   }
-  .backdrop::after{
-    content:""; position:absolute; inset:0;
-    background:radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,.45) 100%);
-  }
+  body.solid .backdrop{display:none}
 
-  /* ---------- layout ---------- */
-  .viewport{
-    position:relative; z-index:1;
-    height:100vh; height:100dvh;
-    display:grid; place-items:center;
-    padding:16px;
-    padding-right:calc(16px + var(--extra-r));
-    padding-bottom:calc(16px + var(--extra-b));
-    transition:padding .3s ease;
-  }
+  /* ---------- stage = the whole screen; scene = the image box placed inside it ---------- */
   .stage{
-    position:relative;
-    width:min(100%, calc((100vh - 32px - var(--extra-b)) * var(--ar)));
-    width:min(100%, calc((100dvh - 32px - var(--extra-b)) * var(--ar)));
-    aspect-ratio:var(--ar);
-    border-radius:22px;
-    box-shadow:0 30px 80px -20px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06);
+    position:fixed; top:0; left:0; bottom:var(--extra-b); right:var(--extra-r);
+    overflow:hidden;
+    container-type:inline-size;
+    transition:right .3s ease, bottom .3s ease;
   }
-  .rumble,.jolt{position:absolute; inset:0; border-radius:inherit}
+  .scene{position:absolute; left:0; top:0; width:100%; height:100%}
+  .rumble,.jolt{position:absolute; inset:0}
   .rumble{transform-origin:50% 92%}
   .mock{
     display:block; width:100%; height:100%;
-    border-radius:inherit; object-fit:fill;
     pointer-events:none;
     -webkit-user-drag:none; -webkit-touch-callout:none;
   }
+  body:not(.solid) .mock{border-radius:18px; box-shadow:0 30px 80px -20px rgba(0,0,0,.6)}
 
   /* ---------- ORDER hotspot (shows the same pixels as the image, so it can be "pressed") ---------- */
   .hotspot{
@@ -116,10 +107,10 @@
   }
   .stage.busy .hint, body.setup .hint{display:none}
 
-  /* ---------- cart ---------- */
+  /* ---------- cart (placed on the screen, not on the image) ---------- */
   .cart{
     position:absolute; z-index:5;
-    width:clamp(48px, 13%, 86px); aspect-ratio:1;
+    width:clamp(52px, 14vmin, 88px); aspect-ratio:1;
     transform:translate(-50%,-50%);
   }
   .cart-btn{
@@ -143,7 +134,7 @@
     position:absolute; top:-6%; right:-6%;
     min-width:42%; height:42%; padding:0 6%;
     border-radius:999px; background:var(--badge); color:#fff;
-    font-weight:700; font-size:clamp(11px, 1.9vmin, 16px);
+    font-weight:700; font-size:clamp(11px, 2vmin, 16px);
     display:grid; place-items:center;
     box-shadow:0 0 0 2px #fff;
     transform:scale(0); transition:transform .25s cubic-bezier(.3,.7,.4,1.6);
@@ -157,10 +148,9 @@
   .fx{position:absolute; inset:0; pointer-events:none; z-index:6; overflow:visible}
   .flyer{
     position:absolute; left:0; top:0; will-change:transform, opacity;
-    line-height:1; font-size:clamp(28px, 9cqw, 64px);
+    line-height:1; font-size:clamp(30px, 10vmin, 64px);
     filter:drop-shadow(0 6px 8px rgba(0,0,0,.3));
   }
-  .stage{container-type:inline-size}
   .flyer img{display:block; width:1.1em; height:1.1em; object-fit:contain}
   .ghost{position:absolute; left:0; top:0; will-change:transform, opacity}
   .ghost-img{
@@ -179,6 +169,7 @@
   .spark{
     position:absolute; left:0; top:0; width:8px; height:8px; margin:-4px 0 0 -4px;
     border-radius:50%; background:var(--c, #ffd23f);
+    transform:var(--p);
     animation:spark .55s cubic-bezier(.2,.7,.3,1) forwards;
   }
   @keyframes spark{
@@ -187,8 +178,9 @@
   }
   .plus{
     position:absolute; left:0; top:0;
-    font-weight:800; font-size:clamp(14px, 3.4cqw, 22px); color:#fff;
+    font-weight:800; font-size:clamp(14px, 3.6vmin, 22px); color:#fff;
     text-shadow:0 2px 6px rgba(0,0,0,.45);
+    transform:var(--p);
     animation:plus .8s ease-out forwards;
   }
   @keyframes plus{
@@ -198,11 +190,12 @@
 
   /* ---------- toast ---------- */
   .toast{
-    position:absolute; left:50%; bottom:6%; z-index:7;
+    position:absolute; left:50%; z-index:7;
+    bottom:calc(6% + env(safe-area-inset-bottom, 0px));
     transform:translate(-50%, 16px) scale(.96); opacity:0;
     padding:12px 20px; border-radius:999px;
     background:rgba(17,24,32,.86); color:#fff;
-    font-weight:600; font-size:clamp(14px, 3.2cqw, 18px); white-space:nowrap;
+    font-weight:600; font-size:clamp(14px, 3.4vmin, 18px); white-space:nowrap;
     display:flex; align-items:center; gap:10px;
     box-shadow:0 14px 34px -10px rgba(0,0,0,.6);
     -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
@@ -222,7 +215,6 @@
     background:var(--panel); color:var(--panel-ink);
     box-shadow:0 20px 50px -12px rgba(0,0,0,.55);
     font-size:14px;
-    transform-origin:top right;
     animation:popIn .2s ease-out;
   }
   @keyframes popIn{from{opacity:0; transform:scale(.92)}}
@@ -250,32 +242,37 @@
     width:40px; height:40px; border-radius:50%;
     border:1px solid var(--glass-line); background:var(--glass);
     -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
-    display:grid; place-items:center; cursor:pointer; opacity:.7;
+    display:grid; place-items:center; cursor:pointer; opacity:.75;
     transition:opacity .2s, transform .2s;
   }
+  .ctl[hidden]{display:none}
   .ctl:hover,.ctl:focus-visible{opacity:1}
   .ctl:active{transform:scale(.92)}
   .ctl svg{width:20px; height:20px}
   body.setup .controls{display:none}
 
   /* ---------- setup mode ---------- */
-  .edit-layer{position:absolute; inset:0; z-index:9; display:none}
+  .edit-layer{position:absolute; inset:0; z-index:9; display:none; pointer-events:none}
+  .edit-layer > *{pointer-events:auto}
   body.setup .edit-layer{display:block}
   body.setup .hotspot{pointer-events:none}
+  body.setup .scene{outline:1px dashed rgba(255,255,255,.5)}
   .edit-rect,.edit-point{
     position:absolute; cursor:move; touch-action:none;
     border:2px dashed #fff; background:rgba(255,214,10,.18);
     box-shadow:0 0 0 1px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.35);
   }
   .edit-rect.food{background:rgba(64,170,255,.18)}
-  .edit-point{width:clamp(56px, 15%, 96px); aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%); background:rgba(255,80,120,.16)}
+  .edit-rect.focus{background:rgba(80,220,140,.10); border-style:dotted}
+  .edit-point{width:clamp(60px, 16vmin, 100px); aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%); background:rgba(255,80,120,.16)}
   .edit-rect::before,.edit-point::before{
     content:attr(data-label);
     position:absolute; left:-2px; bottom:calc(100% + 4px);
     padding:3px 8px; border-radius:6px; white-space:nowrap;
     background:#111a; color:#fff; font-size:12px; font-weight:600;
   }
-  .edit-point::before{left:50%; transform:translateX(-50%)}
+  .edit-rect.focus::before{bottom:auto; top:4px; left:4px}
+  .edit-point::before{left:50%; bottom:auto; top:calc(100% + 4px); transform:translateX(-50%)}
   .handle{
     position:absolute; right:-9px; bottom:-9px; width:18px; height:18px;
     border-radius:50%; background:#fff; border:2px solid #111;
@@ -319,25 +316,25 @@
 
   .error{
     position:absolute; inset:0; display:grid; place-items:center; text-align:center;
-    padding:24px; border-radius:inherit; background:rgba(0,0,0,.55); line-height:1.6;
+    padding:24px; background:rgba(0,0,0,.55); line-height:1.6; z-index:10;
   }
   .error[hidden]{display:none}
   .error code{background:rgba(255,255,255,.15); padding:2px 6px; border-radius:6px}
 
   .ios-haptic{position:fixed; left:-9999px; top:0; width:1px; height:1px; overflow:hidden; opacity:0}
 
-  @media (min-width:761px){ body.setup{--extra-r:356px} }
+  @media (min-width:761px){ body.setup{--extra-r:372px} }
   @media (max-width:760px){
     .panel{top:auto; left:8px; right:8px; bottom:8px; width:auto; max-height:46vh; border-radius:18px}
-    body.setup{--extra-b:46vh}
+    body.setup{--extra-b:47vh}
   }
 </style>
 </head>
 <body>
 <div class="backdrop" aria-hidden="true"></div>
 
-<div class="viewport">
-  <main class="stage" id="stage">
+<main class="stage" id="stage">
+  <div class="scene" id="scene">
     <div class="rumble" id="rumble">
       <div class="jolt" id="jolt">
         <img class="mock" id="mock" alt="Mockup">
@@ -345,32 +342,35 @@
         <button class="hotspot" id="hotspot" type="button" aria-label="ORDER"></button>
       </div>
     </div>
-
-    <div class="cart" id="cart">
-      <button class="cart-btn" id="cartBtn" type="button" aria-label="ตะกร้าสินค้า">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M2.5 3.5h2.6l2.3 11.2a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.2l1.7-7.3H6.1"/>
-          <circle cx="9.5" cy="20" r="1.4" fill="currentColor"/>
-          <circle cx="17.5" cy="20" r="1.4" fill="currentColor"/>
-        </svg>
-        <span class="badge" id="badge">0</span>
-      </button>
-    </div>
-
-    <div class="fx" id="fx"></div>
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-    <div class="edit-layer" id="editLayer">
+    <div class="edit-layer">
+      <div class="edit-rect focus" data-key="focusArea" data-label="ต้องเห็นเสมอ"><span class="handle"></span></div>
       <div class="edit-rect food" data-key="foodArea" data-label="อาหาร (จุดที่ลอยออก)"><span class="handle"></span></div>
       <div class="edit-rect" data-key="orderButton" data-label="ปุ่ม ORDER"><span class="handle"></span></div>
-      <div class="edit-point" data-key="cart" data-label="ตะกร้า"></div>
     </div>
+  </div>
 
-    <div class="error" id="error" hidden></div>
-  </main>
-</div>
+  <div class="cart" id="cart">
+    <button class="cart-btn" id="cartBtn" type="button" aria-label="ตะกร้าสินค้า">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2.5 3.5h2.6l2.3 11.2a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.2l1.7-7.3H6.1"/>
+        <circle cx="9.5" cy="20" r="1.4" fill="currentColor"/>
+        <circle cx="17.5" cy="20" r="1.4" fill="currentColor"/>
+      </svg>
+      <span class="badge" id="badge">0</span>
+    </button>
+  </div>
+
+  <div class="edit-layer">
+    <div class="edit-point" data-key="cart" data-label="ตะกร้า"></div>
+  </div>
+
+  <div class="fx" id="fx"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="error" id="error" hidden></div>
+</main>
 
 <div class="controls" id="controls">
+  <button class="ctl" id="fsBtn" type="button" aria-label="เต็มจอ" hidden></button>
   <button class="ctl" id="muteBtn" type="button" aria-label="ปิด/เปิดเสียง"></button>
   <button class="ctl" id="setupBtn" type="button" aria-label="ตั้งค่าตำแหน่ง">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -385,11 +385,12 @@
     <h2>ตั้งค่าตำแหน่ง</h2>
     <button class="btn icon" id="closeSetup" type="button" aria-label="ปิด">✕</button>
   </header>
-  <p>ลากกรอบให้ตรงกับภาพ ใช้จุดกลมมุมขวาล่างเพื่อย่อ/ขยาย ค่าจะถูกจำไว้ในเบราว์เซอร์นี้อัตโนมัติ</p>
+  <p>ลากกรอบให้ตรงกับภาพ ใช้จุดกลมมุมขวาล่างเพื่อย่อ/ขยาย ระหว่างตั้งค่าจะแสดงภาพเต็มใบ ค่าจะถูกจำไว้ในเบราว์เซอร์นี้อัตโนมัติ</p>
   <ul class="legend">
     <li><i style="color:#e0b400"></i>ปุ่ม ORDER: พื้นที่ที่กดได้</li>
     <li><i style="color:#3a9be0"></i>อาหาร: ส่วนของภาพที่จะลอยเข้าตะกร้า</li>
-    <li><i style="color:#e0507a;border-radius:50%"></i>ตะกร้า: ตำแหน่งไอคอนตะกร้า</li>
+    <li><i style="color:#3fbf7f;border-style:dotted"></i>ต้องเห็นเสมอ: ตอนขยายเต็มจอ ส่วนนี้จะไม่ถูกตัด</li>
+    <li><i style="color:#e0507a;border-radius:50%"></i>ตะกร้า: ตำแหน่งบนหน้าจอ</li>
   </ul>
   <div class="row">
     <label class="btn" for="fileInput">🖼️ เปลี่ยนรูป…</label>
@@ -407,22 +408,28 @@
 
 <script>
 /* =====================================================================
-   ตั้งค่า: แก้ตรงนี้ได้เลย (ตัวเลขตำแหน่งเป็น % ของความกว้าง/สูงของรูป)
+   ตั้งค่า: แก้ตรงนี้ได้เลย (ตำแหน่งบนรูปเป็น % ของความกว้าง/สูงของรูป)
 
    เปลี่ยนรูป mockup:
      1) เอารูปใหม่ไปวางในโฟลเดอร์ img/ แล้วแก้ค่า image ด้านล่าง
         (หรือตั้งชื่อทับไฟล์ img/Order.png ไปเลย)
      2) เปิดหน้าเว็บโดยเติม ?setup ท้ายลิงก์ (เช่น index.html?setup) หรือกดปุ่ม S บนคีย์บอร์ด
-        แล้วลากกรอบ ORDER / อาหาร / ตะกร้า ให้ตรงกับรูปใหม่
-     3) กด "คัดลอกค่า" แล้วเอามาวางแทน orderButton / foodArea / cart ด้านล่าง
+        แล้วลากกรอบ ORDER / อาหาร / ต้องเห็นเสมอ / ตะกร้า ให้ตรงกับรูปใหม่
+     3) กด "คัดลอกค่า" แล้วเอามาวางแทนค่าเดิมด้านล่าง
    ===================================================================== */
 const CONFIG = {
   image: "img/Order.png",
 
   orderButton: { x: 41.5, y: 57.4, w: 16.8, h: 6.5 },  // ตำแหน่งปุ่ม ORDER บนรูป
   foodArea:    { x: 37.6, y: 24.8, w: 24.8, h: 30.1 }, // ส่วนของรูปที่จะลอยเข้าตะกร้า
-  cart:        { x: 87.5, y: 11.5 },                   // จุดกึ่งกลางไอคอนตะกร้า
+  focusArea:   { x: 31, y: 12, w: 38, h: 66 },         // ส่วนของรูปที่ต้องเห็นครบเสมอ ตอนขยายเต็มจอ
+  cart:        { x: 86, y: 9 },                        // ตำแหน่งตะกร้า เป็น % ของ "หน้าจอ"
   buttonRadius: 0.16,                                  // ความโค้งมุมปุ่ม (สัดส่วนของความสูงปุ่ม)
+
+  // การวางภาพบนจอ
+  fit: "fill",              // "fill" = ขยายให้เต็มจอ (ตัดขอบที่เกินได้ แต่ focusArea ต้องเห็นครบ) | "contain" = เห็นทั้งภาพเสมอ
+  align: { x: 0.5, y: 1 },  // ถ้าภาพไม่เต็มจอด้านไหน ให้ชิด: x 0=ซ้าย 0.5=กลาง 1=ขวา / y 0=บน 0.5=กลาง 1=ล่าง
+  background: "auto",       // สีพื้นที่ว่างรอบภาพ: "auto" = ใช้สีขอบภาพ หรือใส่สีเอง เช่น "#02a995"
 
   // ไอเท็มที่ลอยตามเข้าไปในตะกร้า ใช้ emoji หรือ path รูปก็ได้ เช่น "img/pizza.png"
   flyItems: ["🍕", "🥤", "🍗", "🍟", "🍔", "🌭"],
@@ -462,22 +469,23 @@ const CONFIG = {
   const store = {
     get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
-    del(k) { try { localStorage.removeItem(k); } catch {} },
   };
+  const isSetup = () => document.body.classList.contains("setup");
 
-  const stage = $("stage"), rumble = $("rumble"), jolt = $("jolt"), mock = $("mock");
+  const stage = $("stage"), scene = $("scene"), rumble = $("rumble"), jolt = $("jolt"), mock = $("mock");
   const hotspot = $("hotspot"), hint = $("hint"), cart = $("cart"), cartBtn = $("cartBtn");
   const badge = $("badge"), fx = $("fx"), toast = $("toast"), errorBox = $("error");
 
   /* ---------------- state (CONFIG + saved setup) ---------------- */
-  const LAYOUT_KEYS = ["orderButton", "foodArea", "cart"];
-  const SAVE_KEY = "orderInteractive.setup.v1";
+  const LAYOUT_KEYS = ["orderButton", "foodArea", "focusArea", "cart"];
+  const SAVE_KEY = "orderInteractive.setup.v2";
   const baseSig = JSON.stringify({ image: CONFIG.image, ...Object.fromEntries(LAYOUT_KEYS.map(k => [k, CONFIG[k]])) });
   const S = {};
   function resetLayout() { LAYOUT_KEYS.forEach(k => S[k] = { ...CONFIG[k] }); }
   resetLayout();
   S.imageSrc = CONFIG.image;
   S.imageName = null;
+  let imgAR = 1;
 
   // Saved values only apply while CONFIG is unchanged; editing CONFIG in the file always wins.
   const saved = store.get(SAVE_KEY);
@@ -495,16 +503,50 @@ const CONFIG = {
     return false;
   }
 
-  /* ---------------- image ---------------- */
+  /* ---------------- image + surround colour ---------------- */
   function cssUrl(src) { return `url("${String(src).replace(/["\\]/g, "\\$&")}")`; }
+
+  // Most common colour along the image's edges, so the empty space around it blends in.
+  function edgeColor(img) {
+    try {
+      const n = 40, c = document.createElement("canvas");
+      c.width = c.height = n;
+      const g = c.getContext("2d", { willReadFrequently: true });
+      g.drawImage(img, 0, 0, n, n);
+      const d = g.getImageData(0, 0, n, n).data;
+      const bins = new Map();
+      let best = null;
+      const add = (x, y) => {
+        const i = (y * n + x) * 4;
+        if (d[i + 3] < 200) return;
+        const key = (d[i] >> 4) + "," + (d[i + 1] >> 4) + "," + (d[i + 2] >> 4);
+        const b = bins.get(key) || { n: 0, r: 0, g: 0, b: 0 };
+        b.n++; b.r += d[i]; b.g += d[i + 1]; b.b += d[i + 2];
+        bins.set(key, b);
+        if (!best || b.n > best.n) best = b;
+      };
+      for (let i = 0; i < n; i++) { add(i, 0); add(i, n - 1); add(0, i); add(n - 1, i); }
+      if (!best || best.n < n * 4 * 0.35) return null;   // edges are too busy to extend
+      return `rgb(${Math.round(best.r / best.n)}, ${Math.round(best.g / best.n)}, ${Math.round(best.b / best.n)})`;
+    } catch { return null; }   // canvas is blocked for local files in some browsers
+  }
+  function applySurround(img) {
+    const color = CONFIG.background && CONFIG.background !== "auto" ? CONFIG.background : edgeColor(img);
+    document.body.classList.toggle("solid", !!color);
+    const page = color || "#0d1716";
+    document.documentElement.style.setProperty("--page", page);
+    $("themeColor").setAttribute("content", page);
+  }
+
   function setImage(src, onDone) {
     const probe = new Image();
     probe.onload = () => {
       mock.src = src;
+      imgAR = probe.naturalWidth / probe.naturalHeight;
       document.documentElement.style.setProperty("--img", cssUrl(src));
-      document.documentElement.style.setProperty("--ar", (probe.naturalWidth / probe.naturalHeight).toFixed(5));
+      applySurround(probe);
       errorBox.hidden = true;
-      requestAnimationFrame(layout);
+      layout();
       onDone && onDone(true);
     };
     probe.onerror = () => {
@@ -520,6 +562,32 @@ const CONFIG = {
   }
 
   /* ---------------- layout ---------------- */
+  const box = { left: 0, top: 0, width: 0, height: 0 };   // where the image sits on the stage (px)
+
+  // Fill the screen with the image, but never crop into focusArea; leftover space shows the surround colour.
+  function fitScene() {
+    const vw = stage.clientWidth, vh = stage.clientHeight;
+    if (!vw || !vh) return;
+    const ar = imgAR, f = S.focusArea;
+    const contain = Math.min(vw / ar, vh), cover = Math.max(vw / ar, vh);   // scale = image height in px
+    let s = contain;
+    const fill = CONFIG.fit !== "contain" && !isSetup();
+    if (fill) {
+      const m = 0.94;
+      const fitFocus = Math.min((vw * m) / (f.w / 100 * ar), (vh * m) / (f.h / 100));
+      s = Math.max(contain, Math.min(cover, fitFocus));
+    }
+    const W = ar * s, H = s;
+    const fcx = (f.x + f.w / 2) / 100 * W, fcy = (f.y + f.h / 2) / 100 * H;
+    const ax = fill ? CONFIG.align.x : 0.5, ay = fill ? CONFIG.align.y : 0.5;
+    box.width = W; box.height = H;
+    box.left = W >= vw ? clamp(vw / 2 - fcx, vw - W, 0) : (vw - W) * ax;
+    box.top = H >= vh ? clamp(vh / 2 - fcy, vh - H, 0) : (vh - H) * ay;
+    Object.assign(scene.style, {
+      left: box.left + "px", top: box.top + "px", width: W + "px", height: H + "px",
+    });
+  }
+
   function placeRect(el, r) {
     el.style.left = r.x + "%"; el.style.top = r.y + "%";
     el.style.width = r.w + "%"; el.style.height = r.h + "%";
@@ -530,22 +598,31 @@ const CONFIG = {
     el.style.backgroundPosition = `${r.w >= 100 ? 0 : (r.x / (100 - r.w)) * 100}% ${r.h >= 100 ? 0 : (r.y / (100 - r.h)) * 100}%`;
   }
   const editEls = {};
-  document.querySelectorAll("#editLayer [data-key]").forEach(el => editEls[el.dataset.key] = el);
+  document.querySelectorAll(".edit-layer [data-key]").forEach(el => editEls[el.dataset.key] = el);
+
+  function placeCart() {
+    // percentage of the screen, kept clear of notches / rounded corners
+    const half = cart.offsetWidth / 2 + 8;
+    cart.style.left = `clamp(calc(env(safe-area-inset-left, 0px) + ${half}px), ${S.cart.x}%, calc(100% - env(safe-area-inset-right, 0px) - ${half}px))`;
+    cart.style.top = `clamp(calc(env(safe-area-inset-top, 0px) + ${half}px), ${S.cart.y}%, calc(100% - env(safe-area-inset-bottom, 0px) - ${half}px))`;
+  }
 
   function layout() {
+    fitScene();
     const b = S.orderButton;
     placeRect(hotspot, b); cropBg(hotspot, b);
     placeRect(hint, b);
-    const radius = stage.clientHeight * (b.h / 100) * CONFIG.buttonRadius + "px";
+    const radius = box.height * (b.h / 100) * CONFIG.buttonRadius + "px";
     hotspot.style.borderRadius = hint.style.borderRadius = radius;
     hint.style.display = CONFIG.hintPulse ? "" : "none";
-
-    cart.style.left = S.cart.x + "%"; cart.style.top = S.cart.y + "%";
+    placeCart();
 
     placeRect(editEls.orderButton, S.orderButton);
     placeRect(editEls.foodArea, S.foodArea);
-    editEls.cart.style.left = S.cart.x + "%"; editEls.cart.style.top = S.cart.y + "%";
-    if (document.body.classList.contains("setup")) updateReadout();
+    placeRect(editEls.focusArea, S.focusArea);
+    const c = cartPoint();
+    editEls.cart.style.left = c.x + "px"; editEls.cart.style.top = c.y + "px";
+    if (isSetup()) updateReadout();
   }
   new ResizeObserver(layout).observe(stage);
 
@@ -658,12 +735,18 @@ const CONFIG = {
     };
   })();
 
-  /* ---------------- geometry ---------------- */
+  /* ---------------- geometry (all in stage px) ---------------- */
   function stageSize() { return { W: stage.clientWidth, H: stage.clientHeight }; }
-  function cartPoint() { const { W, H } = stageSize(); return { x: S.cart.x / 100 * W, y: S.cart.y / 100 * H }; }
+  function cartPoint() {
+    const s = stage.getBoundingClientRect(), c = cart.getBoundingClientRect();
+    return { x: c.left - s.left + c.width / 2, y: c.top - s.top + c.height / 2 };
+  }
   function foodRectPx() {
-    const { W, H } = stageSize(), r = S.foodArea;
-    return { x: r.x / 100 * W, y: r.y / 100 * H, w: r.w / 100 * W, h: r.h / 100 * H };
+    const r = S.foodArea;
+    return {
+      x: box.left + r.x / 100 * box.width, y: box.top + r.y / 100 * box.height,
+      w: r.w / 100 * box.width, h: r.h / 100 * box.height,
+    };
   }
 
   /* ---------------- motion ---------------- */
@@ -723,7 +806,7 @@ const CONFIG = {
     }
   }
   function plusOne(x, y) {
-    spawn("plus", x, y - stage.clientWidth * 0.06, el => el.textContent = "+1");
+    spawn("plus", x, y - cart.offsetWidth * 0.75, el => el.textContent = "+1");
   }
 
   const ease = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -831,9 +914,8 @@ const CONFIG = {
       img.animate([{ transform: "scale(1)" }, { transform: "scale(1.12)" }, { transform: "scale(1.04)" }],
         { duration: 220, easing: "ease-out", fill: "forwards" });
       Sound.whoosh();
-      const cartPx = cart.getBoundingClientRect().width;
       setTimeout(() => flight(ghost, { x: r.x + r.w / 2, y: r.y + r.h / 2 }, c, {
-        dur: 820, lift: 0.2, spin: rand(-14, 14), scaleTo: (cartPx * 0.7) / Math.max(r.w, r.h),
+        dur: 820, lift: 0.2, spin: rand(-14, 14), scaleTo: (cart.offsetWidth * 0.7) / Math.max(r.w, r.h),
         onEnd: () => done(SET_KEY),
       }), 200);
     }, 60);
@@ -874,7 +956,7 @@ const CONFIG = {
     if (busy === 0) { stopRumble(); stage.classList.remove("busy"); }
   }
 
-  hotspot.addEventListener("click", (e) => { if (!document.body.classList.contains("setup")) order(e); });
+  hotspot.addEventListener("click", (e) => { if (!isSetup()) order(e); });
 
   /* ---------------- mini cart popover ---------------- */
   let pop = null;
@@ -907,24 +989,25 @@ const CONFIG = {
       pop.appendChild(btn);
     }
     stage.appendChild(pop);
-    // anchor near the cart, kept inside the stage
-    const cp = cartPoint(), { W, H } = stageSize(), half = cart.clientWidth / 2 + 10;
+    // anchor near the cart, kept inside the screen
+    const cp = cartPoint(), { W, H } = stageSize(), half = cart.offsetWidth / 2 + 10;
     const pw = pop.offsetWidth, ph = pop.offsetHeight;
-    let left = S.cart.x > 50 ? cp.x - pw + half - 10 : cp.x - half + 10;
-    let top = S.cart.y > 60 ? cp.y - half - ph : cp.y + half;
+    const right = cp.x > W / 2, below = cp.y < H * 0.6;
+    const left = right ? cp.x + half - 10 - pw : cp.x - half + 10;
+    const top = below ? cp.y + half : cp.y - half - ph;
     pop.style.left = clamp(left, 8, Math.max(8, W - pw - 8)) + "px";
     pop.style.top = clamp(top, 8, Math.max(8, H - ph - 8)) + "px";
-    pop.style.transformOrigin = `${S.cart.x > 50 ? "right" : "left"} ${S.cart.y > 60 ? "bottom" : "top"}`;
+    pop.style.transformOrigin = `${right ? "right" : "left"} ${below ? "top" : "bottom"}`;
   }
   cartBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (document.body.classList.contains("setup")) return;
+    if (isSetup()) return;
     retrigger(cartBtn, "bump");
     pop ? closePop() : openPop();
   });
   document.addEventListener("click", closePop);
 
-  /* ---------------- sound toggle ---------------- */
+  /* ---------------- sound + fullscreen buttons ---------------- */
   const muteBtn = $("muteBtn");
   const ICON_ON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>`;
   const ICON_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 6 6M22 9l-6 6"/></svg>`;
@@ -932,15 +1015,40 @@ const CONFIG = {
   muteBtn.addEventListener("click", (e) => { e.stopPropagation(); Sound.toggle(); renderMute(); });
   renderMute();
 
+  // Fullscreen exists on Android / desktop browsers; iPhone browsers don't offer it (use Add to Home Screen there).
+  const fsBtn = $("fsBtn");
+  const root = document.documentElement;
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ICON_FS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`;
+  const ICON_FS_EXIT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>`;
+  function renderFs() { fsBtn.innerHTML = fsEl() ? ICON_FS_EXIT : ICON_FS; }
+  if (!standalone && (document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
+    fsBtn.hidden = false;
+    renderFs();
+    fsBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      try {
+        if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        else {
+          const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root, { navigationUI: "hide" });
+          if (p && p.catch) p.catch(() => {});
+        }
+      } catch {}
+    });
+    document.addEventListener("fullscreenchange", renderFs);
+    document.addEventListener("webkitfullscreenchange", renderFs);
+  }
+
   /* ---------------- setup mode ---------------- */
   const panel = $("panel"), readout = $("readout"), note = $("note"), setupBtn = $("setupBtn");
-  if (!CONFIG.showSetupButton) setupBtn.style.display = "none";
+  if (!CONFIG.showSetupButton) setupBtn.hidden = true;
 
   function setNote(msg, kind = "") { note.textContent = msg; note.className = "note " + kind; }
   function configText() {
     const r = (o) => "{ " + Object.entries(o).map(([k, v]) => `${k}: ${round1(v)}`).join(", ") + " }";
     const img = S.imageSrc === CONFIG.image ? CONFIG.image : `img/${S.imageName || "ชื่อรูปใหม่.png"}`;
-    return `image: "${img}",\norderButton: ${r(S.orderButton)},\nfoodArea:    ${r(S.foodArea)},\ncart:        ${r(S.cart)},`;
+    return `image: "${img}",\norderButton: ${r(S.orderButton)},\nfoodArea:    ${r(S.foodArea)},\nfocusArea:   ${r(S.focusArea)},\ncart:        ${r(S.cart)},`;
   }
   function updateReadout() { readout.textContent = configText(); }
 
@@ -984,9 +1092,9 @@ const CONFIG = {
     fr.readAsDataURL(file);
   }
   $("fileInput").addEventListener("change", (e) => { loadFile(e.target.files[0]); e.target.value = ""; });
-  document.addEventListener("dragover", (e) => { if (document.body.classList.contains("setup")) e.preventDefault(); });
+  document.addEventListener("dragover", (e) => { if (isSetup()) e.preventDefault(); });
   document.addEventListener("drop", (e) => {
-    if (!document.body.classList.contains("setup")) return;
+    if (!isSetup()) return;
     e.preventDefault();
     loadFile(e.dataTransfer.files[0]);
   });
@@ -1005,15 +1113,15 @@ const CONFIG = {
     setNote(ok ? "คัดลอกแล้ว · เปิด index.html ด้วย Notepad แล้ววางแทนค่าเดิมใน CONFIG" : "คัดลอกอัตโนมัติไม่ได้ ให้ลากเลือกข้อความด้านบนแล้วกด Ctrl+C", ok ? "ok" : "warn");
   });
 
-  // drag / resize the edit boxes
+  // drag / resize the edit boxes: image boxes are % of the image, the cart is % of the screen
   function startDrag(e, key, mode) {
     e.preventDefault(); e.stopPropagation();
-    const sr = stage.getBoundingClientRect();
+    const ref = (key === "cart" ? stage : scene).getBoundingClientRect();
     const sx = e.clientX, sy = e.clientY, o = { ...S[key] };
     const target = e.currentTarget;
     try { target.setPointerCapture(e.pointerId); } catch {}
     const move = (ev) => {
-      const dx = (ev.clientX - sx) / sr.width * 100, dy = (ev.clientY - sy) / sr.height * 100;
+      const dx = (ev.clientX - sx) / ref.width * 100, dy = (ev.clientY - sy) / ref.height * 100;
       const r = S[key];
       if (mode === "resize") {
         r.w = clamp(o.w + dx, 2, 100 - o.x);
@@ -1048,9 +1156,9 @@ const CONFIG = {
     if (e.target.closest && e.target.closest("input, textarea")) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const k = e.key.toLowerCase();
-    if (k === "s") document.body.classList.contains("setup") ? closeSetup() : openSetup();
+    if (k === "s") isSetup() ? closeSetup() : openSetup();
     else if (k === "m") { Sound.toggle(); renderMute(); }
-    else if (k === "escape") { closePop(); if (document.body.classList.contains("setup")) closeSetup(); }
+    else if (k === "escape") { closePop(); if (isSetup()) closeSetup(); }
   });
 
   /* ---------------- go ---------------- */
